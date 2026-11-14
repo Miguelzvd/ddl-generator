@@ -1,8 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react';
 import type { Session } from '../hooks/useSession';
 import { filesFromDataTransfer, readFileList } from '../lib/io/files';
-import type { ParsedFile } from '../lib/model';
-import { parseFile } from '../lib/parser/parseFile';
 import { Icon } from './Icon';
 
 interface Props {
@@ -24,12 +22,10 @@ export function LoadStep({ session, announce, onReview }: Props) {
     if (!files.length) return;
     setLoading({ done: 0, total: files.length });
     const { sources, failures } = await readFileList(files, (done, total) => setLoading({ done, total }));
-    const parsed: ParsedFile[] = sources.map((s) => parseFile(s.path, s.text));
-    for (const f of failures) parsed.push({ file: f.path, entities: [], commented: [], error: f.error });
     setLoading(undefined);
-    const n = session.addFiles(parsed, label);
-    if (n === 0) return announce('Nenhuma entity TypeORM encontrada nos arquivos selecionados.');
-    announce(`${n} entities encontradas em ${parsed.length} arquivos.`);
+    const n = session.addFiles(sources, failures, label);
+    if (n.entities === 0) return announce('Nenhuma entity TypeORM encontrada nos arquivos selecionados.');
+    announce(`${n.entities} entities encontradas em ${n.files} arquivos.`);
     onReview();
   }
 

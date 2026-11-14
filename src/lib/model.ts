@@ -18,6 +18,8 @@ export interface ColumnModel {
   unique: boolean;
   /** Default já em SQL (ex.: `SYSDATE`, `'A'`, `0`). */
   default?: string;
+  /** Linha da propriedade (do primeiro decorator) no arquivo. */
+  line?: number;
 }
 
 export interface JoinColumnModel {
@@ -61,6 +63,8 @@ export interface EntityModel {
   indices: IndexModel[];
   /** Motivo quando o decorator não pôde ser lido (ex.: nome não literal). */
   unresolved?: string;
+  /** Linha da declaração `class` no arquivo. */
+  line?: number;
 }
 
 export interface CommentedEntity {
