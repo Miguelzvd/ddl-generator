@@ -1,0 +1,183 @@
+/* ---------- etapa 3 ---------- */
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.script-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+.sql {
+  margin: 0;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  padding: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--sql-bg);
+  font: 0.8125rem/1.6 var(--mono);
+  counter-reset: ln;
+  tab-size: 2;
+}
+.sql .ln {
+  display: block;
+  padding: 0 16px 0 0;
+  white-space: pre;
+  transition: background-color 600ms var(--ease);
+}
+.sql .ln::before {
+  counter-increment: ln;
+  content: counter(ln);
+  display: inline-block;
+  width: 4.5ch;
+  margin-right: 16px;
+  text-align: right;
+  color: var(--tok-com);
+  opacity: 0.6;
+  user-select: none;
+}
+.sql .ln.flash {
+  background: var(--warn-bg);
+}
+.tok-kw {
+  color: var(--tok-kw);
+  font-weight: 600;
+}
+.tok-type {
+  color: var(--tok-type);
+}
+.tok-str {
+  color: var(--tok-str);
+}
+.tok-com {
+  color: var(--tok-com);
+}
+.tok-off {
+  color: var(--tok-com);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--bad) 60%, transparent);
+}
+.tok-warn {
+  color: var(--warn);
+  font-weight: 550;
+}
+.warn-panel {
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 260px);
+  overflow: hidden auto;
+  padding: 4px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.warn-panel h3 {
+  margin: 12px 12px 8px;
+}
+.warn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.warn-list > li.muted {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+}
+.warn-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  overflow-wrap: anywhere;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.warn-item:hover {
+  background: var(--surface-2);
+}
+.warn-table {
+  color: var(--warn);
+  font-size: 0.75rem;
+}
+.warn-line {
+  grid-row: 1;
+  grid-column: 2;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.warn-item > span:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1023px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .stepper {
+    order: 3;
+    margin: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .script-grid {
+    grid-template-columns: 1fr;
+  }
+  .warn-panel {
+    position: static;
+  }
+  .table thead {
+    display: none;
+  }
+  .table tr:not(.details) {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    padding: 8px 4px;
+    border-top: 1px solid var(--border);
+  }
+  .table td {
+    border: 0;
+    padding: 4px 8px;
+  }
+  .table td:nth-child(n + 4) {
+    grid-column: 1 / -1;
+    padding-left: 60px;
+  }
+  .details td {
+    padding-left: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation: none !important;
+  }
+}
+

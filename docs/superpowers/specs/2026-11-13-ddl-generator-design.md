@@ -87,7 +87,7 @@ view ainda entram na seção "Views encontradas (sem DDL)" do script). Erros de 
 um arquivo aparecem como linha vermelha, sem interromper os demais.
 
 ### Leitura (parser)
-Usa o compilador `typescript` (`ts.createSourceFile`, só AST, sem type-checker) para cada
+Usa um parser próprio e pequeno (tokens → valores → entities), sem o compilador TypeScript, para cada
 arquivo. Extrai para um modelo intermediário:
 
 ```
@@ -245,10 +245,10 @@ sem perder o que fez.
   linhas empilhadas.
 
 ## Stack (decisões do implementador, revisáveis)
-- Vite + TypeScript, sem framework de UI (página pequena) — ou Preact se a listagem
-  crescer.
-- `typescript` como dependência de runtime para o parser.
-- `vite-plugin-singlefile` para gerar um único `index.html` que abre via `file://`.
+- Vite + React + TypeScript, na estrutura do template `react-ts` do Vite.
+- Parser próprio: o compilador TypeScript não entra no bundle.
+- Build estático em `dist/`, servido por qualquer servidor web.
+- A versão em HTML + CSS + JS puros, sem build, fica guardada na branch `js-vanilla`.
 - Testes: Vitest para parser e gerador, com fixtures com entities fictícias de exemplo
   (domínio de loja: Produto, Categoria, Marca, Cliente…).
 - Projeto independente: `ddl-generator`. Funciona com qualquer projeto TypeORM;

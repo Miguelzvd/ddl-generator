@@ -1,9 +1,6 @@
-import { defineConfig } from 'vite';
-import { viteSingleFile } from 'vite-plugin-singlefile';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: './',
-  plugins: [viteSingleFile()],
-  build: { chunkSizeWarningLimit: 20000 },
-  test: { include: ['tests/**/*.test.ts'] },
-} as any);
+  plugins: [react()],
+});
