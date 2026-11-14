@@ -67,3 +67,7 @@ tests/                 testes da lógica e entities fictícias de exemplo
 
 A versão em HTML + CSS + JS puros (sem build, abre com dois cliques) está guardada na
 branch `js-vanilla`.
+
+## Licença
+
+[MIT](LICENSE) © 2026 Miguelzvd
