@@ -1,0 +1,7 @@
+/* Ponto de entrada dos estilos: a ordem importa (base primeiro). */
+@import './base.css';
+@import './layout.css';
+@import './load.css';
+@import './review.css';
+@import './script.css';
+@import './assumptions.css';

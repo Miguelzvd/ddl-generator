@@ -4,7 +4,6 @@ import { filesFromDataTransfer, readFileList } from '../lib/io/files';
 import type { ParsedFile } from '../lib/model';
 import { parseFile } from '../lib/parser/parseFile';
 import { Icon } from './Icon';
-import './LoadStep.css';
 
 interface Props {
   session: Session;

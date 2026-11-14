@@ -4,7 +4,6 @@ import { safeId } from '../lib/browser';
 import type { Assumption, EntityReport, Overrides } from '../lib/model';
 import { Icon } from './Icon';
 import type { ChangeFn } from './ReviewStep';
-import './AssumptionEditor.css';
 
 const TYPEORM_TYPES = ['varchar2', 'nvarchar2', 'char', 'number', 'date', 'timestamp', 'clob', 'nclob', 'blob', 'boolean', 'float', 'raw'];
 

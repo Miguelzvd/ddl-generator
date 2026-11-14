@@ -3,7 +3,6 @@ import type { Session } from '../hooks/useSession';
 import { download } from '../lib/browser';
 import { collectWarnings, highlightSql } from '../lib/sqlView';
 import { Icon } from './Icon';
-import './ScriptStep.css';
 
 interface Props {
   session: Session;

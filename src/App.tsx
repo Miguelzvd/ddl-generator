@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import './App.css';
 import { Icon } from './components/Icon';
 import { LoadStep } from './components/LoadStep';
 import { ReviewStep } from './components/ReviewStep';
