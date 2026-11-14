@@ -54,3 +54,7 @@ Requer Node 18+ (só para os testes; quem usa a ferramenta não precisa):
 ```bash
 npm test        # ou: node --test
 ```
+
+## Licença
+
+[MIT](LICENSE) © 2026 Miguelzvd
