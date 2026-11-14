@@ -5,7 +5,6 @@ import { STATUS_LABEL, type EntityReport, type Overrides, type Status } from '..
 import { isSelectable, type Session } from '../hooks/useSession';
 import { EntityDetails } from './EntityDetails';
 import { Icon, StatusDot } from './Icon';
-import './ReviewStep.css';
 
 const STATUS_ORDER: Status[] = ['ok', 'revised', 'assumptions', 'commented', 'impossible'];
 const NO_SCHEMA = '(sem schema)';

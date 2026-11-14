@@ -53,8 +53,10 @@ index.html             página base do Vite (#root)
 src/main.tsx           monta o <App />
 src/App.tsx            topo, etapas e tema
 src/components/        uma etapa por componente (LoadStep, ReviewStep, ScriptStep),
-                       detalhes da entity e editor de suposições, cada um com seu .css
+                       detalhes da entity e editor de suposições (só .tsx)
 src/hooks/             useSession (arquivos, correções, seleção, script) e useTheme
+src/styles/            todo o CSS: index.css importa os demais na ordem
+                       (base → layout → uma folha por etapa)
 src/lib/               lógica pura, sem React:
   parser/              lê o código: tokens → valores → entities
   ddl/                 tipos Oracle, nomes, plano de cada tabela e geração do SQL
