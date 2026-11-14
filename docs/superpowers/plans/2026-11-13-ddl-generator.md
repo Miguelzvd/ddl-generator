@@ -1,4 +1,4 @@
-# TypeORM → DDL Oracle — Implementation Plan
+# DDL Generator — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vite 5.4.21, TypeScript 5.6.3 (também runtime do parser), vite-plugin-singlefile 2.3.4, Vitest 2.1.9, pnpm.
 
-**Spec:** `docs/superpowers/specs/2026-11-13-typeorm-ddl-generator-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-13-ddl-generator-design.md`
 
 ## Global Constraints
 

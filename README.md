@@ -1,4 +1,4 @@
-# TypeORM → DDL Oracle
+# DDL Generator
 
 Gera scripts DDL Oracle (`CREATE TABLE`, PKs, FKs, índices, `COMMENT ON`) a partir das
 entities TypeORM de um projeto — **direto no navegador, sem banco e sem servidor**.

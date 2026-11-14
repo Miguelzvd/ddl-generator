@@ -63,7 +63,7 @@ export function mountApp(root: HTMLElement): void {
     h(
       'header',
       { class: 'topbar' },
-      h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }), h('h1', {}, 'TypeORM → DDL Oracle')),
+      h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }), h('h1', {}, 'DDL Generator')),
       stepper,
       themeBtn,
     ),
