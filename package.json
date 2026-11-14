@@ -2,6 +2,7 @@
   "name": "ddl-generator",
   "version": "0.3.0",
   "private": true,
+  "license": "MIT",
   "description": "Gera scripts DDL Oracle a partir de entities TypeORM, direto no navegador.",
   "type": "module",
   "scripts": {
