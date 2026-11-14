@@ -19,6 +19,8 @@ Abra a página e siga as 3 etapas:
 
    Abra uma linha para corrigir cada suposição (tamanho, tipo, nome de coluna/tabela, FK),
    aplicar um tamanho em lote ou copiar o decorator corrigido para colar na entity.
+   Os detalhes mostram a linha de cada coluna e onde a entity é usada no projeto
+   (`arquivo:linha`, que copia ao clicar).
    As correções ficam salvas neste navegador.
 3. **Script** — copie ou baixe o `.sql`. A opção *Oracle 11g* troca `IDENTITY` por
    `SEQUENCE` e limita nomes a 30 caracteres.
@@ -62,6 +64,7 @@ src/lib/               lógica pura, sem React:
   ddl/                 tipos Oracle, nomes, plano de cada tabela e geração do SQL
   analysis/            status de cada entity e correções do usuário
   io/                  leitura dos arquivos escolhidos
+  usages.ts            onde cada entity é usada no projeto
 tests/                 testes da lógica e entities fictícias de exemplo
 ```
 
