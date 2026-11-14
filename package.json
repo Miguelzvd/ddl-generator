@@ -1,0 +1,26 @@
+{
+  "name": "typeorm-ddl-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gera scripts DDL Oracle a partir de entities TypeORM, direto no navegador.",
+  "type": "module",
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "dependencies": {
+    "typescript": "5.6.3"
+  },
+  "devDependencies": {
+    "vite": "5.4.21",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "2.1.9"
+  }
+}
