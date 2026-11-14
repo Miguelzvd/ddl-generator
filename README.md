@@ -1,34 +1,56 @@
 # TypeORM → DDL Oracle
 
 Gera scripts DDL Oracle (`CREATE TABLE`, PKs, FKs, índices, `COMMENT ON`) a partir das
-entities TypeORM de um projeto — **direto no navegador, sem banco e sem servidor**.
+entities TypeORM de um projeto — **direto no navegador, sem banco, sem servidor e sem instalar nada**.
 Nada sai do seu computador.
 
 ## Usar
 
-Abra `dist/index.html` (duplo clique) e siga as 3 etapas:
+Baixe (ou clone) a pasta e abra o `index.html` com dois cliques. Depois, siga as 3 etapas:
 
 1. **Carregar** — selecione a pasta do projeto (ou arraste arquivos `.ts`).
    `node_modules`, `dist`, `build`, `.git` e `.d.ts` são ignorados.
 2. **Revisar** — toda entity encontrada aparece com um status:
    - 🟢 **Pode gerar** — tem tudo que o DDL precisa
    - 🟡 **Pode gerar, com suposições** — gera, mas presume algo (ex.: `VARCHAR2` sem tamanho → 255)
+   - 🔵 **Revisado** — as suposições foram corrigidas ou aceitas por você
    - ⚪ **Comentado** — o `@Entity` está comentado no código
    - 🔴 **Não é possível gerar** — view (sem o SELECT), sem colunas ou erro de leitura
+
+   Abra uma linha para corrigir cada suposição (tamanho, tipo, nome de coluna/tabela, FK),
+   aplicar um tamanho em lote ou copiar o decorator corrigido para colar na entity.
+   As correções ficam salvas neste navegador.
 3. **Script** — copie ou baixe o `.sql`. A opção *Oracle 11g* troca `IDENTITY` por
    `SEQUENCE` e limita nomes a 30 caracteres.
 
-No script, `-- ATENÇÃO:` marca todo valor presumido e FKs que o Oracle recusaria
-(destino é view, não carregado ou tipo diferente — ORA-02267) saem comentadas com `-- MOTIVO:`.
+No script, `-- ATENÇÃO:` marca todo valor presumido, `-- Revisado:` o que você decidiu, e FKs
+que o Oracle recusaria (destino é view, não carregado ou tipo diferente — ORA-02267) saem
+comentadas com `-- MOTIVO:`.
 
-## Desenvolver
+## Como é feito
 
-```bash
-pnpm install
-pnpm dev      # http://localhost:5173
-pnpm test     # testes (Vitest)
-pnpm build    # gera dist/index.html (arquivo único, pronto para distribuir)
+HTML, CSS e JavaScript puros: sem dependências, sem build, sem framework.
+
+```
+index.html        carrega os CSS e os scripts, nesta ordem
+css/              base (cores e tema), layout e um arquivo por etapa
+js/model.js       tipos (JSDoc) e rótulos de status
+js/parser/        lê o código: tokens → valores → entities
+js/ddl/           tipos Oracle, nomes, plano de cada tabela e geração do SQL
+js/analysis/      status de cada entity e correções do usuário
+js/io/            leitura dos arquivos escolhidos
+js/ui/            interface: uma etapa por arquivo
+tests/            testes (node --test) e entities fictícias de exemplo
 ```
 
-Estrutura: `src/parser` (lê o AST com o compilador TypeScript) → `src/analysis`
-(status de cada entity) → `src/ddl` (plano e geração do SQL) → `src/ui` (interface).
+Os scripts são clássicos (sem `type="module"`, que o navegador bloqueia ao abrir do disco)
+e cada um se registra em `window.DDL`. Por isso a **ordem no `index.html` importa**: um
+arquivo novo entra depois dos que ele usa. Os testes carregam a mesma lista.
+
+## Testar
+
+Requer Node 18+ (só para os testes; quem usa a ferramenta não precisa):
+
+```bash
+npm test        # ou: node --test
+```

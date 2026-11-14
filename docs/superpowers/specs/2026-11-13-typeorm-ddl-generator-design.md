@@ -38,8 +38,8 @@ instalação.
 
 ## Restrições
 
-- Roda 100% no navegador; distribuído como **um único arquivo `index.html`** que abre com
-  duplo clique (sem servidor).
+- Roda 100% no navegador: a pasta do projeto (`index.html` + `css/` + `js/`) abre com
+  duplo clique, sem servidor, sem build e sem dependências.
 - Entities TypeORM 0.3.x: ver "Padrões a suportar".
 - Nenhum código do usuário é enviado para fora da máquina.
 
@@ -244,15 +244,20 @@ sem perder o que fez.
 - Funciona a partir de 1024 px de largura (uso em desktop); abaixo disso a lista vira
   linhas empilhadas.
 
-## Stack (decisões do implementador, revisáveis)
-- Vite + TypeScript, sem framework de UI (página pequena) — ou Preact se a listagem
-  crescer.
-- `typescript` como dependência de runtime para o parser.
-- `vite-plugin-singlefile` para gerar um único `index.html` que abre via `file://`.
-- Testes: Vitest para parser e gerador, com fixtures com entities fictícias de exemplo
-  (domínio de loja: Produto, Categoria, Marca, Cliente…).
+## Stack
+- HTML + CSS + JavaScript puros, sem dependências e sem build.
+- Scripts clássicos (sem `type="module"`, que o navegador bloqueia em `file://`),
+  carregados em ordem pelo `index.html`; cada arquivo se registra em `window.DDL`.
+- Parser próprio (tokenizador + leitor de decorators), no lugar do compilador TypeScript:
+  lê classes, decorators, objetos de opções, `() => Classe`, imports relativos e comentários.
+- Tipos documentados com JSDoc (`js/model.js`).
+- CSS dividido por etapa em `css/`.
+- Testes com o executor nativo do Node (`node --test`), com fixtures de entities
+  fictícias (domínio de loja: Produto, Categoria, Marca, Cliente…).
 - Projeto independente: `typeorm-ddl-generator`. Funciona com qualquer projeto TypeORM;
   nada no código depende de um projeto específico.
+- Histórico: a primeira versão usava Vite + TypeScript + vite-plugin-singlefile (arquivo
+  único de ~3,6 MB que precisava de build); trocada para não exigir build nem dependências.
 
 ## Deixado para o implementador
 - Layout visual exato da página.
