@@ -54,6 +54,8 @@ export function ReviewStep({ session, announce, copy, onAddFiles, onGenerate }: 
   for (const r of reports) counts[r.status]++;
   const selectedCount = reports.filter((r) => isSelectable(r) && selected.has(r.id)).length;
   const schemas = [...new Set(reports.map((r) => r.schema ?? NO_SCHEMA))].sort();
+  const classCount = new Map<string, number>();
+  for (const r of reports) if (r.entity) classCount.set(r.className, (classCount.get(r.className) ?? 0) + 1);
   const openLengths = countOpen(reports, 'varchar-length');
   const lengthEntities = reports.filter((r) => r.assumptions.some((a) => a.kind === 'varchar-length' && !a.resolved)).length;
 
@@ -187,7 +189,14 @@ export function ReviewStep({ session, announce, copy, onAddFiles, onGenerate }: 
                 onCheck={() => setSelected(toggleIn(selected, r.id))}
                 onToggle={() => setExpanded(toggleIn(expanded, r.id))}
               >
-                <EntityDetails r={r} overrides={session.overrides} change={change} copy={copy} />
+                <EntityDetails
+                  r={r}
+                  overrides={session.overrides}
+                  change={change}
+                  copy={copy}
+                  usages={session.usages.get(r.className) ?? []}
+                  sharedName={(classCount.get(r.className) ?? 0) > 1}
+                />
               </EntityRow>
             ))}
           </tbody>

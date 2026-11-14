@@ -21,7 +21,8 @@ export const looksLikeEntity = (text: string) => /@(Entity|ViewEntity)\s*\(/.tes
 export const filePath = (f: File) => f.webkitRelativePath || f.name;
 
 /**
- * Lê os arquivos candidatos. `onProgress(lidos, total)` é chamado a cada arquivo;
+ * Lê todos os arquivos candidatos (entities e os demais, usados para achar onde
+ * cada entity é usada). `onProgress(lidos, total)` é chamado a cada arquivo;
  * de 10 em 10 cede a vez ao navegador para a barra de progresso andar.
  */
 export async function readFileList(files: File[], onProgress?: (done: number, total: number) => void) {
@@ -32,8 +33,7 @@ export async function readFileList(files: File[], onProgress?: (done: number, to
   for (const f of candidates) {
     const path = filePath(f);
     try {
-      const text = await f.text();
-      if (looksLikeEntity(text)) sources.push({ path, text });
+      sources.push({ path, text: await f.text() });
     } catch (err) {
       failures.push({ path, error: err instanceof Error ? err.message : String(err) });
     }

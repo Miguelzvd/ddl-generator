@@ -1,17 +1,28 @@
 import { useMemo, useState } from 'react';
 import { buildReports } from '../lib/analysis/classify';
 import { generateDdl } from '../lib/ddl/generate';
+import { looksLikeEntity, type SourceFile } from '../lib/io/files';
 import type { EntityReport, Overrides, ParsedFile } from '../lib/model';
+import { parseFile } from '../lib/parser/parseFile';
 import { loadOverrides, saveOverrides } from '../lib/storage';
+import { findUsages } from '../lib/usages';
 
 /** Status que podem entrar no script. */
 export const isSelectable = (r: EntityReport) => r.status === 'ok' || r.status === 'revised' || r.status === 'assumptions';
+
+/** Soma listas pelo caminho: o mesmo caminho substitui o anterior. */
+function mergeBy<T>(old: T[], add: T[], key: (x: T) => string) {
+  const map = new Map(old.map((x) => [key(x), x]));
+  for (const x of add) map.set(key(x), x);
+  return [...map.values()];
+}
 
 /**
  * Estado da sessão: arquivos lidos, correções do usuário, entities marcadas e o
  * último script. A análise (status e suposições) é recalculada a cada mudança.
  */
 export function useSession() {
+  const [sources, setSources] = useState<SourceFile[]>([]);
   const [files, setFiles] = useState<ParsedFile[]>([]);
   const [overrides, setOverrides] = useState<Overrides>(loadOverrides);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -20,12 +31,16 @@ export function useSession() {
   const [sql, setSql] = useState('');
 
   const analysis = useMemo(() => buildReports(files, overrides), [files, overrides]);
+  const usages = useMemo(() => findUsages(sources, files.flatMap((f) => f.entities)), [sources, files]);
 
-  /** Soma novos arquivos (o mesmo caminho substitui o anterior); devolve quantas entities há. */
-  function addFiles(parsed: ParsedFile[], label: string) {
-    const byPath = new Map(files.map((f) => [f.file, f]));
-    for (const p of parsed) byPath.set(p.file, p);
-    const nextFiles = [...byPath.values()];
+  /**
+   * Soma os arquivos lidos: os que têm entity são interpretados e todos entram na
+   * busca de usos. Devolve quantas entities há agora e quantos arquivos tinham entity.
+   */
+  function addFiles(read: SourceFile[], failures: { path: string; error: string }[], label: string) {
+    const parsed: ParsedFile[] = read.filter((s) => looksLikeEntity(s.text)).map((s) => parseFile(s.path, s.text));
+    for (const f of failures) parsed.push({ file: f.path, entities: [], commented: [], error: f.error });
+    const nextFiles = mergeBy(files, parsed, (f) => f.file);
     const next = buildReports(nextFiles, overrides).reports;
 
     // Novas entities que podem gerar entram marcadas; as que o usuário desmarcou continuam desmarcadas.
@@ -34,10 +49,11 @@ export function useSession() {
     const sel = new Set([...selected].filter((id) => ids.has(id)));
     for (const r of next) if (isSelectable(r) && !previous.has(r.id)) sel.add(r.id);
 
+    setSources(mergeBy(sources, read, (s) => s.path));
     setFiles(nextFiles);
     setSelected(sel);
     setSource(source && source !== label ? `${source} + ${label}` : label);
-    return next.length;
+    return { entities: next.length, files: parsed.length };
   }
 
   /** Aplica uma correção (as funções de `analysis/overrides` alteram o objeto) e salva. */
@@ -50,6 +66,7 @@ export function useSession() {
 
   /** Limpa a sessão; as correções salvas continuam guardadas. */
   function clearAll() {
+    setSources([]);
     setFiles([]);
     setSelected(new Set());
     setSource('');
@@ -68,7 +85,7 @@ export function useSession() {
     buildSql(on);
   }
 
-  return { files, reports: analysis.reports, overrides, selected, setSelected, source, oracle11g, sql, addFiles, editOverrides, clearAll, buildSql, toggle11g };
+  return { files, reports: analysis.reports, usages, overrides, selected, setSelected, source, oracle11g, sql, addFiles, editOverrides, clearAll, buildSql, toggle11g };
 }
 
 export type Session = ReturnType<typeof useSession>;
