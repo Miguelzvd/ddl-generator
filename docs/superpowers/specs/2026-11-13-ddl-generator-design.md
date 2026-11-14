@@ -1,4 +1,4 @@
-# Gerador de DDL a partir de entities TypeORM — Design
+# DDL Generator — Design
 
 Data: 2026-11-13
 
@@ -179,7 +179,7 @@ sem perder o que fez.
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│ TypeORM → DDL Oracle          ① Carregar  ② Revisar  ③ Script │
+│ DDL Generator                 ① Carregar  ② Revisar  ③ Script │
 ├───────────────────────────────────────────────────────────────┤
 │  [ Selecionar pasta do projeto ]   ou arraste arquivos .ts aqui│
 │                                                               │
@@ -254,7 +254,7 @@ sem perder o que fez.
 - CSS dividido por etapa em `css/`.
 - Testes com o executor nativo do Node (`node --test`), com fixtures de entities
   fictícias (domínio de loja: Produto, Categoria, Marca, Cliente…).
-- Projeto independente: `typeorm-ddl-generator`. Funciona com qualquer projeto TypeORM;
+- Projeto independente: `ddl-generator`. Funciona com qualquer projeto TypeORM;
   nada no código depende de um projeto específico.
 - Histórico: a primeira versão usava Vite + TypeScript + vite-plugin-singlefile (arquivo
   único de ~3,6 MB que precisava de build); trocada para não exigir build nem dependências.

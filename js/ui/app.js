@@ -97,7 +97,7 @@
 
     root.append(
       h('a', { class: 'skip', href: '#main' }, 'Pular para o conteúdo'),
-      h('header', { class: 'topbar' }, h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }), h('h1', {}, 'TypeORM → DDL Oracle')), stepper, themeButton()),
+      h('header', { class: 'topbar' }, h('div', { class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }), h('h1', {}, 'DDL Generator')), stepper, themeButton()),
       main,
       live,
     );

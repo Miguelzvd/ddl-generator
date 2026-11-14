@@ -1,5 +1,5 @@
 {
-  "name": "typeorm-ddl-generator",
+  "name": "ddl-generator",
   "version": "0.2.0",
   "private": true,
   "description": "Gera scripts DDL Oracle a partir de entities TypeORM, direto no navegador.",
