@@ -137,7 +137,7 @@
         h('td', { class: 'file muted', title: r.file }, r.file),
       );
       if (!open) return [row];
-      return [row, h('tr', { class: 'details', id: safeId(`det-${r.id}`) }, h('td', { colspan: String(COLS) }, renderDetails(r, editorCtx)))];
+      return [row, h('tr', { class: 'details', id: safeId(`det-${r.id}`) }, h('td', { colspan: String(COLS) }, renderDetails(r, editorCtx, state)))];
     }
 
     function toolbar() {
@@ -211,8 +211,47 @@
     );
   }
 
-  /** Linha aberta: suposições (editáveis) ou motivo, colunas e relações. */
-  function renderDetails(r, editorCtx) {
+  const USAGES_SHOWN = 20;
+
+  /** `arquivo:linha` que copia a referência ao clicar (para colar no Ctrl+P do editor). */
+  function sourceRef(file, line, copy, label) {
+    const ref = `${file}:${line}`;
+    return h('button', { type: 'button', class: 'source-ref mono', title: `Copiar ${ref}`, 'aria-label': `Copiar ${ref}`, onclick: () => void copy(ref) }, h('span', {}, label ?? ref), icon('copy', 12));
+  }
+
+  /** "Usada em": linhas do projeto que citam a classe, com as 20 primeiras visíveis. */
+  function usagesBlock(e, usages, sharedName, copy) {
+    const out = [h('h3', {}, `Usada em (${usages.length})`)];
+    if (sharedName) out.push(h('p', { class: 'hint' }, `Há outra entity chamada ${e.className}: os usos abaixo podem ser de qualquer uma delas.`));
+    if (!usages.length) {
+      out.push(h('p', { class: 'hint' }, `Nenhum uso de ${e.className} encontrado nos arquivos carregados (fora a própria entity).`));
+      return out;
+    }
+    const list = h('ul', { class: 'usages' });
+    const fill = (all) =>
+      list.replaceChildren(
+        ...(all ? usages : usages.slice(0, USAGES_SHOWN)).map((u) =>
+          h('li', {}, sourceRef(u.file, u.line, copy), h('code', { class: 'mono usage-code', title: u.text }, u.text)),
+        ),
+      );
+    fill(false);
+    out.push(list);
+    if (usages.length > USAGES_SHOWN) {
+      let all = false;
+      const more = h('button', { type: 'button', class: 'link' }, `Mostrar todos (+${usages.length - USAGES_SHOWN})`);
+      more.addEventListener('click', () => {
+        all = !all;
+        fill(all);
+        more.textContent = all ? 'Mostrar menos' : `Mostrar todos (+${usages.length - USAGES_SHOWN})`;
+      });
+      out.push(more);
+    }
+    return out;
+  }
+
+  /** Linha aberta: suposições (editáveis) ou motivo, colunas, relações e onde a entity é usada. */
+  function renderDetails(r, editorCtx, state) {
+    const copy = editorCtx.copy;
     const box = h('div', { class: 'detail' });
     if (r.assumptions.length) box.append(assumptionEditor(r, editorCtx));
     else if (r.reasons.length) box.append(h('h3', {}, 'Motivo'), h('ul', { class: 'reasons' }, ...r.reasons.map((x) => h('li', {}, x))));
@@ -224,7 +263,7 @@
         h(
           'table',
           { class: 'mini' },
-          h('thead', {}, h('tr', {}, h('th', {}, 'Propriedade'), h('th', {}, 'Coluna'), h('th', {}, isView ? 'Tipo TS' : 'Tipo Oracle'), h('th', {}, 'Nulo'), h('th', {}, 'PK'))),
+          h('thead', {}, h('tr', {}, h('th', {}, 'Propriedade'), h('th', {}, 'Coluna'), h('th', {}, isView ? 'Tipo TS' : 'Tipo Oracle'), h('th', {}, 'Nulo'), h('th', {}, 'PK'), h('th', {}, 'Linha'))),
           h(
             'tbody',
             {},
@@ -237,6 +276,7 @@
                 h('td', { class: 'mono' }, isView ? c.tsType ?? '—' : mapColumnType(c).sql),
                 h('td', {}, c.nullable ? 'sim' : 'não'),
                 h('td', {}, c.primary ? (c.generated ? 'gerada' : 'sim') : ''),
+                h('td', {}, c.line ? sourceRef(r.file, c.line, copy, String(c.line)) : ''),
               ),
             ),
           ),
@@ -247,7 +287,11 @@
       const rel = (x) => h('li', {}, h('span', { class: 'mono' }, x.property), ` — ${x.kind} → ${x.targetClass}${x.joinColumns[0]?.name ? ` (coluna ${x.joinColumns[0].name})` : ''}`);
       box.append(h('h3', {}, 'Relações'), h('ul', { class: 'reasons' }, ...e.relations.map(rel)));
     }
-    box.append(h('p', { class: 'hint' }, 'Arquivo: ', h('span', { class: 'mono' }, r.file)));
+    if (e) {
+      const sharedName = state.analysis.reports.filter((x) => x.entity && x.className === e.className).length > 1;
+      box.append(...usagesBlock(e, state.usages.get(e.className) ?? [], sharedName, copy));
+    }
+    box.append(h('p', { class: 'hint' }, 'Arquivo: ', e?.line ? sourceRef(r.file, e.line, copy) : h('span', { class: 'mono' }, r.file)));
     return box;
   }
 

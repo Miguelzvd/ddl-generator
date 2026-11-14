@@ -41,8 +41,25 @@
     }
   }
 
+  /** Devolve a função posição no texto → número da linha (a partir de 1). */
+  function lineIndex(text) {
+    const starts = [0];
+    for (let i = 0; i < text.length; i++) if (text[i] === '\n') starts.push(i + 1);
+    return (offset) => {
+      let lo = 0;
+      let hi = starts.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (starts[mid] <= offset) lo = mid;
+        else hi = mid - 1;
+      }
+      return lo + 1;
+    };
+  }
+
   function extractEntities(file, text, tokens = tokenize(text).tokens) {
     const imports = relativeImports(tokens, file);
+    const lineAt = lineIndex(text);
     const r = new Reader(tokens, text);
     const out = [];
     let pending = [];
@@ -50,11 +67,12 @@
       if (r.is('@')) {
         pending.push(readDecorator(r));
       } else if (isClassKeyword(r)) {
-        const e = readClass(r, pending, file);
+        const line = lineAt(r.peek().s);
+        const e = readClass(r, pending, file, lineAt);
         pending = [];
         if (e) {
           for (const rel of e.relations) rel.targetFile = imports.get(rel.targetClass);
-          out.push(e);
+          out.push({ ...e, line });
         }
       } else {
         const t = r.next();
@@ -126,7 +144,7 @@
     return { name, args };
   }
 
-  function readClass(r, decos, file) {
+  function readClass(r, decos, file, lineAt) {
     r.next(); // class
     const className = r.peek()?.t === 'id' && !['extends', 'implements'].includes(r.peek().v) ? r.next().v : '(classe anônima)';
     while (!r.done() && !r.is('{')) {
@@ -171,7 +189,7 @@
 
     for (const m of readMembers(r)) {
       const colDeco = m.decos.find((d) => COLUMN_DECORATORS.has(d.name));
-      if (colDeco) columns.push(readColumn(colDeco, m.property, m.tsType));
+      if (colDeco) columns.push({ ...readColumn(colDeco, m.property, m.tsType), line: lineAt(m.at) });
       const relDeco = m.decos.find((d) => RELATION_DECORATORS.has(d.name));
       if (relDeco) relations.push(readRelation(relDeco, m.decos, m.property));
       const idxDeco = m.decos.find((d) => d.name === 'Index');
@@ -199,13 +217,16 @@
   /**
    * Lê as propriedades do corpo da classe (até o `}` final).
    * Métodos e construtores são pulados.
-   * @returns {{ property: string, tsType?: string, decos: { name: string, args: any[] }[] }[]}
+   * `at` é a posição onde o membro começa (primeiro decorator ou o nome).
+   * @returns {{ property: string, tsType?: string, decos: { name: string, args: any[] }[], at: number }[]}
    */
   function readMembers(r) {
     const members = [];
     let decos = [];
+    let at = -1; // início do membro atual
     while (!r.done() && !r.is('}')) {
       if (r.eat(';') || r.eat(',')) continue;
+      if (at < 0) at = r.peek().s;
       if (r.is('@')) {
         decos.push(readDecorator(r));
         continue;
@@ -218,6 +239,8 @@
       }
       if (r.eat('*')) continue;
 
+      const memberAt = at;
+      at = -1;
       let property;
       if (r.is('[')) {
         const start = r.i;
@@ -239,7 +262,7 @@
       }
       const tsType = r.eat(':') ? readType(r) : undefined;
       if (r.eat('=')) skipInitializer(r);
-      members.push({ property, tsType, decos });
+      members.push({ property, tsType, decos, at: memberAt });
       decos = [];
     }
     r.eat('}');

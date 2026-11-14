@@ -14,12 +14,15 @@
  * @property {import('../model.js').GenerateOptions} opts
  * @property {string} source            de onde vieram os arquivos (para o cabeçalho)
  * @property {string} sql               último script gerado
+ * @property {import('../io/files.js').SourceFile[]} sources  todos os .ts lidos (para a busca de usos)
+ * @property {Map<string, import('../analysis/usages.js').Usage[]>} usages  classe → onde é usada
  * @property {{ done: number, total: number }} [loading]
  */
 (function (DDL) {
   'use strict';
 
   const { buildReports } = DDL.classify;
+  const { findUsages } = DDL.usages;
   const { loadOverrides } = DDL.ui.storage;
 
   /** Status que podem entrar no script. */
@@ -42,6 +45,8 @@
       opts: { oracle11g: false },
       source: '',
       sql: '',
+      sources: [],
+      usages: new Map(),
     };
   }
 
@@ -52,12 +57,19 @@
     state.analysis = buildReports(state.files, state.overrides);
   }
 
-  /** Soma novos arquivos (o mesmo caminho substitui o anterior) e recalcula. */
-  function addFiles(state, parsed, sourceLabel) {
+  /**
+   * Soma novos arquivos (o mesmo caminho substitui o anterior) e recalcula.
+   * `read` são todos os .ts lidos, usados para achar onde cada entity é usada.
+   */
+  function addFiles(state, parsed, sourceLabel, read = []) {
     const previous = new Set(state.analysis.reports.map((r) => r.id));
     const byPath = new Map(state.files.map((f) => [f.file, f]));
     for (const p of parsed) byPath.set(p.file, p);
     state.files = [...byPath.values()];
+    const srcByPath = new Map(state.sources.map((s) => [s.path, s]));
+    for (const s of read) srcByPath.set(s.path, s);
+    state.sources = [...srcByPath.values()];
+    state.usages = findUsages(state.sources, state.files.flatMap((f) => f.entities));
     reanalyze(state);
     state.source = state.source && state.source !== sourceLabel ? `${state.source} + ${sourceLabel}` : sourceLabel;
     const ids = new Set(state.analysis.reports.map((r) => r.id));

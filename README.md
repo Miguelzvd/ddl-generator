@@ -19,6 +19,8 @@ Baixe (ou clone) a pasta e abra o `index.html` com dois cliques. Depois, siga as
 
    Abra uma linha para corrigir cada suposição (tamanho, tipo, nome de coluna/tabela, FK),
    aplicar um tamanho em lote ou copiar o decorator corrigido para colar na entity.
+   Os detalhes mostram a linha de cada coluna e onde a entity é usada no projeto
+   (`arquivo:linha`, que copia ao clicar).
    As correções ficam salvas neste navegador.
 3. **Script** — copie ou baixe o `.sql`. A opção *Oracle 11g* troca `IDENTITY` por
    `SEQUENCE` e limita nomes a 30 caracteres.
@@ -37,7 +39,7 @@ css/              base (cores e tema), layout e um arquivo por etapa
 js/model.js       tipos (JSDoc) e rótulos de status
 js/parser/        lê o código: tokens → valores → entities
 js/ddl/           tipos Oracle, nomes, plano de cada tabela e geração do SQL
-js/analysis/      status de cada entity e correções do usuário
+js/analysis/      status de cada entity, correções do usuário e onde cada entity é usada
 js/io/            leitura dos arquivos escolhidos
 js/ui/            interface: uma etapa por arquivo
 tests/            testes (node --test) e entities fictícias de exemplo

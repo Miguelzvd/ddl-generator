@@ -13,7 +13,7 @@
   'use strict';
 
   const { h, icon } = DDL.ui.dom;
-  const { readFileList, filesFromDataTransfer } = DDL.files;
+  const { readFileList, filesFromDataTransfer, looksLikeEntity } = DDL.files;
   const { parseFile } = DDL.parser;
   const { addFiles, clearAll } = DDL.ui.state;
 
@@ -27,10 +27,10 @@
       state.loading = { done, total };
       updateProgress(state);
     });
-    const parsed = sources.map((s) => parseFile(s.path, s.text));
+    const parsed = sources.filter((s) => looksLikeEntity(s.text)).map((s) => parseFile(s.path, s.text));
     for (const f of failures) parsed.push({ file: f.path, entities: [], commented: [], error: f.error });
     state.loading = undefined;
-    addFiles(state, parsed, label);
+    addFiles(state, parsed, label, sources);
     const n = state.analysis.reports.length;
     if (n === 0) {
       ctx.render();

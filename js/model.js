@@ -24,6 +24,7 @@
  * @property {boolean} generated
  * @property {boolean} unique
  * @property {string} [default]       já em SQL (ex.: `SYSDATE`, `'A'`, `0`)
+ * @property {number} [line]          linha da propriedade (do primeiro decorator) no arquivo
  *
  * @typedef {{ name?: string, referencedColumnName?: string }} JoinColumnModel
  *
@@ -48,6 +49,7 @@
  * @property {RelationModel[]} relations
  * @property {IndexModel[]} indices
  * @property {string} [unresolved]       motivo quando o decorator não pôde ser lido
+ * @property {number} [line]             linha da declaração `class` no arquivo
  *
  * @typedef {{ file: string, className?: string, tableName?: string, schema?: string, kind: EntityKind }} CommentedEntity
  * @typedef {{ file: string, entities: EntityModel[], commented: CommentedEntity[], error?: string }} ParsedFile

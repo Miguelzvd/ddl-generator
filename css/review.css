@@ -223,6 +223,61 @@
   color: var(--muted);
   font-weight: 550;
 }
+/* Referência arquivo:linha que copia ao clicar */
+.source-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+.source-ref .icon {
+  opacity: 0;
+  color: var(--muted);
+}
+.source-ref:hover,
+.source-ref:focus-visible {
+  background: var(--sql-bg);
+}
+.source-ref:hover .icon,
+.source-ref:focus-visible .icon {
+  opacity: 1;
+}
+/* Usada em */
+.usages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 12px;
+  font-size: 0.8125rem;
+}
+.usages li {
+  display: contents; /* as células entram no grid da lista: colunas alinhadas */
+}
+.usages .source-ref {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+}
+.usages .source-ref span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usage-code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
 .empty {
   text-align: center;
   color: var(--muted);
