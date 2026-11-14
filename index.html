@@ -2,49 +2,13 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>DDL Generator</title>
-
-    <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/layout.css" />
-    <link rel="stylesheet" href="css/load.css" />
-    <link rel="stylesheet" href="css/review.css" />
-    <link rel="stylesheet" href="css/script.css" />
-    <link rel="stylesheet" href="css/assumptions.css" />
   </head>
   <body>
-    <div id="app"></div>
-
-    <!--
-      Scripts clássicos (sem type="module"), para abrir com dois cliques direto do disco.
-      A ordem importa: cada arquivo usa os que vieram antes, via window.DDL.
-    -->
-    <!-- núcleo -->
-    <script src="js/model.js"></script>
-    <script src="js/parser/lexer.js"></script>
-    <script src="js/parser/literal.js"></script>
-    <script src="js/parser/parseFile.js"></script>
-    <script src="js/ddl/ident.js"></script>
-    <script src="js/ddl/typeMap.js"></script>
-    <script src="js/ddl/naming.js"></script>
-    <script src="js/ddl/snippet.js"></script>
-    <script src="js/ddl/joinTable.js"></script>
-    <script src="js/ddl/plan.js"></script>
-    <script src="js/ddl/generate.js"></script>
-    <script src="js/analysis/classify.js"></script>
-    <script src="js/analysis/overrides.js"></script>
-    <script src="js/io/files.js"></script>
-    <!-- interface -->
-    <script src="js/ui/dom.js"></script>
-    <script src="js/ui/sqlHighlight.js"></script>
-    <script src="js/ui/storage.js"></script>
-    <script src="js/ui/state.js"></script>
-    <script src="js/ui/assumptionEditor.js"></script>
-    <script src="js/ui/loadStep.js"></script>
-    <script src="js/ui/reviewStep.js"></script>
-    <script src="js/ui/scriptStep.js"></script>
-    <script src="js/ui/app.js"></script>
-    <script src="js/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

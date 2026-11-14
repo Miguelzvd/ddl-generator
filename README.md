@@ -1,12 +1,12 @@
 # DDL Generator
 
 Gera scripts DDL Oracle (`CREATE TABLE`, PKs, FKs, índices, `COMMENT ON`) a partir das
-entities TypeORM de um projeto — **direto no navegador, sem banco, sem servidor e sem instalar nada**.
-Nada sai do seu computador.
+entities TypeORM de um projeto — **direto no navegador, sem banco de dados**.
+Os arquivos são lidos no próprio navegador: nada sai do seu computador.
 
 ## Usar
 
-Baixe (ou clone) a pasta e abra o `index.html` com dois cliques. Depois, siga as 3 etapas:
+Abra a página e siga as 3 etapas:
 
 1. **Carregar** — selecione a pasta do projeto (ou arraste arquivos `.ts`).
    `node_modules`, `dist`, `build`, `.git` e `.d.ts` são ignorados.
@@ -27,30 +27,41 @@ No script, `-- ATENÇÃO:` marca todo valor presumido, `-- Revisado:` o que voc�
 que o Oracle recusaria (destino é view, não carregado ou tipo diferente — ORA-02267) saem
 comentadas com `-- MOTIVO:`.
 
-## Como é feito
+## Desenvolver
 
-HTML, CSS e JavaScript puros: sem dependências, sem build, sem framework.
-
-```
-index.html        carrega os CSS e os scripts, nesta ordem
-css/              base (cores e tema), layout e um arquivo por etapa
-js/model.js       tipos (JSDoc) e rótulos de status
-js/parser/        lê o código: tokens → valores → entities
-js/ddl/           tipos Oracle, nomes, plano de cada tabela e geração do SQL
-js/analysis/      status de cada entity e correções do usuário
-js/io/            leitura dos arquivos escolhidos
-js/ui/            interface: uma etapa por arquivo
-tests/            testes (node --test) e entities fictícias de exemplo
-```
-
-Os scripts são clássicos (sem `type="module"`, que o navegador bloqueia ao abrir do disco)
-e cada um se registra em `window.DDL`. Por isso a **ordem no `index.html` importa**: um
-arquivo novo entra depois dos que ele usa. Os testes carregam a mesma lista.
-
-## Testar
-
-Requer Node 18+ (só para os testes; quem usa a ferramenta não precisa):
+Requer Node 20.19+ e pnpm.
 
 ```bash
-npm test        # ou: node --test
+pnpm install
+pnpm dev       # http://localhost:5173
+pnpm test      # testes (Vitest)
+pnpm build     # typecheck + build em dist/
+pnpm preview   # serve o dist/ localmente
 ```
+
+## Publicar
+
+`pnpm build` gera um site estático em `dist/` (HTML, JS e CSS). Basta servir essa pasta em
+qualquer servidor web (Nginx, Apache, Vercel, Netlify, GitHub Pages…); não há backend.
+
+## Estrutura
+
+Projeto Vite + React + TypeScript (template `react-ts`):
+
+```
+index.html             página base do Vite (#root)
+src/main.tsx           monta o <App />
+src/App.tsx            topo, etapas e tema
+src/components/        uma etapa por componente (LoadStep, ReviewStep, ScriptStep),
+                       detalhes da entity e editor de suposições, cada um com seu .css
+src/hooks/             useSession (arquivos, correções, seleção, script) e useTheme
+src/lib/               lógica pura, sem React:
+  parser/              lê o código: tokens → valores → entities
+  ddl/                 tipos Oracle, nomes, plano de cada tabela e geração do SQL
+  analysis/            status de cada entity e correções do usuário
+  io/                  leitura dos arquivos escolhidos
+tests/                 testes da lógica e entities fictícias de exemplo
+```
+
+A versão em HTML + CSS + JS puros (sem build, abre com dois cliques) está guardada na
+branch `js-vanilla`.

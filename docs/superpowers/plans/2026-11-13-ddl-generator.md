@@ -4,17 +4,15 @@
 
 **Goal:** Página 100% no navegador que lê entities TypeORM (pasta ou arquivos), lista cada uma com status e gera DDL Oracle comentado.
 
-**Architecture:** Núcleo puro e testável (`parser` → `analysis` → `ddl`) sem DOM; UI em JavaScript sem framework consome o núcleo. Scripts clássicos carregados em ordem pelo `index.html`, registrados em `window.DDL`; abre via `file://` sem build.
+**Architecture:** Núcleo puro e testável (`parser` → `analysis` → `ddl`) sem DOM; UI em TypeScript sem framework consome o núcleo. Build único `dist/index.html` via vite-plugin-singlefile.
 
-**Tech Stack:** HTML + CSS + JavaScript puros, sem dependências. Testes com `node --test`.
-
-> **Migração (2026-11-14):** a primeira implementação usava Vite + TypeScript (compilador TS como parser) e gerava `dist/index.html`. Foi reescrita em JS puro, com parser próprio, para não exigir build nem dependências. As tarefas abaixo continuam válidas; os nomes de arquivo seguem a estrutura nova.
+**Tech Stack:** Vite 5.4.21, TypeScript 5.6.3 (também runtime do parser), vite-plugin-singlefile 2.3.4, Vitest 2.1.9, pnpm.
 
 **Spec:** `docs/superpowers/specs/2026-11-13-ddl-generator-design.md`
 
 ## Global Constraints
 
-- Nada é enviado para fora da máquina; sem servidor; `index.html` abre via `file://`, sem build.
+- Nada é enviado para fora da máquina; sem servidor; `dist/index.html` abre via `file://`.
 - Só TypeORM; só Oracle.
 - Todo valor presumido sai no SQL como `-- ATENÇÃO: <motivo>`.
 - `VARCHAR2` sem tamanho → `VARCHAR2(255)` + aviso.
@@ -37,23 +35,19 @@
 ## File Structure
 
 ```
-index.html                   carrega css/ e js/ na ordem certa
-css/                         base, layout e um arquivo por etapa
-js/model.js                  tipos (JSDoc) e rótulos de status
-js/parser/lexer.js           texto → tokens (+ comentários à parte)
-js/parser/literal.js         tokens → valores (string, número, objeto, função)
-js/parser/parseFile.js       parseFile(path, text): ParsedFile
-js/ddl/typeMap.js            mapColumnType(col): { sql, warning? }
-js/ddl/naming.js, ident.js   nomes, ids, constraints e palavras reservadas
-js/ddl/plan.js, joinTable.js planTable(entity, registry, opts): TablePlan
-js/ddl/generate.js           generateDdl(reports, registry, opts, meta): string
-js/analysis/classify.js      buildReports(files, overrides)
-js/analysis/overrides.js     correções das suposições
-js/io/files.js               filtro de caminhos, leitura de File[] e DataTransfer
-js/ui/*.js                   interface (3 etapas)
+package.json, tsconfig.json, vite.config.ts, index.html
+src/model.ts                 tipos compartilhados
+src/parser/literal.ts        AST → valor JS (string, number, objeto, função raw)
+src/parser/parseFile.ts      parseFile(path, text): ParsedFile
+src/ddl/typeMap.ts           mapColumnType(col): { sql, warning? }
+src/ddl/plan.ts              planTable(entity, registry, opts): TablePlan
+src/analysis/classify.ts     buildReports(files): EntityReport[]
+src/ddl/generate.ts          generateDdl(reports, registry, opts): string
+src/io/files.ts              filtro de caminhos, leitura de File[] e DataTransfer
+src/ui/*.ts, src/styles.css  interface (3 etapas)
 tests/fixtures/*.ts          entities fictícias de exemplo
-tests/*.test.js              node --test
-
+tests/*.test.ts
+```
 
 ### Task 1: Scaffold + modelo
 
@@ -112,4 +106,4 @@ tests/*.test.js              node --test
 
 - [ ] Implementar conforme seção "Interface" do spec (etapas, estado vazio, progresso, filtros por status/schema/busca, linha expansível, barra fixa, 11g toggle, avisos clicáveis, copiar/baixar, tema claro/escuro + toggle).
 - [ ] Teste `sqlHighlight` escapa HTML (`<` → `&lt;`).
-- [ ] Verificar: `npm test` (ou `node --test`), abrir `index.html` e checagem visual no navegador com uma pasta de entities de exemplo.
+- [ ] Verificar: `pnpm test`, `pnpm build`, `pnpm dev` e checagem visual no navegador com uma pasta de entities de exemplo.
