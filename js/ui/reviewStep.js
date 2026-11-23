@@ -215,7 +215,7 @@
 
   /** `arquivo:linha` que copia a referência ao clicar (para colar no Ctrl+P do editor). */
   function sourceRef(file, line, copy, label) {
-    const ref = `${file}:${line}`;
+    const ref = `${DDL.files.editorPath(file)}:${line}`;
     return h('button', { type: 'button', class: 'source-ref mono', title: `Copiar ${ref}`, 'aria-label': `Copiar ${ref}`, onclick: () => void copy(ref) }, h('span', {}, label ?? ref), icon('copy', 12));
   }
 

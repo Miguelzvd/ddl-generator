@@ -19,6 +19,16 @@
   /** Filtro rápido antes de ler: só arquivos que mencionam @Entity( ou @ViewEntity(. */
   const looksLikeEntity = (text) => /@(Entity|ViewEntity)\s*\(/.test(text);
 
+  /**
+   * Caminho para colar no Ctrl+P do VS Code: sem a pasta escolhida na frente
+   * ("projeto/src/x.ts" → "src/x.ts"), já que ela é a raiz aberta no editor.
+   */
+  function editorPath(path) {
+    const p = path.replace(/\\/g, '/');
+    const i = p.indexOf('/');
+    return i === -1 ? p : p.slice(i + 1);
+  }
+
   /** @param {File} f */
   const filePath = (f) => f.webkitRelativePath || f.name;
 
@@ -85,5 +95,5 @@
     return out;
   }
 
-  DDL.files = { isCandidatePath, looksLikeEntity, filePath, readFileList, filesFromDataTransfer };
+  DDL.files = { isCandidatePath, editorPath, looksLikeEntity, filePath, readFileList, filesFromDataTransfer };
 })((globalThis.DDL = globalThis.DDL || {}));
