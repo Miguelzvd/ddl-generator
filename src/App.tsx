@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ConfirmDiscard } from './components/ConfirmDiscard';
 import { Icon } from './components/Icon';
 import { LoadStep } from './components/LoadStep';
 import { ReviewStep } from './components/ReviewStep';
@@ -30,10 +31,30 @@ export default function App() {
     await copyText(text);
     announce('Copiado para a área de transferência.');
   };
+  /** Ação que aguarda o usuário decidir se descarta o SQL editado. */
+  const [pending, setPending] = useState<(() => void) | null>(null);
+  /** Roda `action` direto ou, com SQL editado, depois de confirmar o descarte. */
+  const guard = (action: () => void) => {
+    if (session.sqlEdited) setPending(() => action);
+    else action();
+  };
+
+  // Fechar ou recarregar a aba com SQL editado também perde as alterações.
+  useEffect(() => {
+    if (!session.sqlEdited) return;
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [session.sqlEdited]);
+
   const go = (n: Step) => {
-    setStep(n);
-    main.current?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0 });
+    const move = () => {
+      setStep(n);
+      main.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0 });
+    };
+    if (step === 3 && n !== 3) guard(move);
+    else move();
   };
   const enabled = (n: Step) => n === 1 || (n === 2 && session.reports.length > 0) || (n === 3 && session.sql !== '');
 
@@ -64,8 +85,18 @@ export default function App() {
       <main id="main" className="main" tabIndex={-1} ref={main}>
         {step === 1 && <LoadStep session={session} announce={announce} onReview={() => go(2)} />}
         {step === 2 && <ReviewStep session={session} announce={announce} copy={copy} onAddFiles={() => go(1)} onGenerate={() => go(3)} />}
-        {step === 3 && <ScriptStep session={session} announce={announce} copy={copy} onBack={() => go(2)} />}
+        {step === 3 && <ScriptStep session={session} announce={announce} copy={copy} guard={guard} onBack={() => go(2)} />}
       </main>
+      {pending && (
+        <ConfirmDiscard
+          onKeep={() => setPending(null)}
+          onDiscard={() => {
+            session.revertSql();
+            setPending(null);
+            pending();
+          }}
+        />
+      )}
       <div className="sr-only" aria-live="polite" role="status">
         {live}
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type KeyboardEvent, useMemo, useRef, useState } from 'react';
 import type { Session } from '../hooks/useSession';
 import { download } from '../lib/browser';
 import { collectWarnings, highlightSql } from '../lib/sqlView';
@@ -8,6 +8,8 @@ interface Props {
   session: Session;
   announce: (msg: string) => void;
   copy: (text: string) => Promise<void>;
+  /** Com SQL editado, pede confirmação antes de `action` (que refaz o script). */
+  guard: (action: () => void) => void;
   onBack: () => void;
 }
 
@@ -30,9 +32,17 @@ function jumpTo(line: number) {
   el.classList.add('flash');
 }
 
-/** Etapa 3 — Script: SQL destacado, painel de avisos, opção 11g, copiar e baixar. */
-export function ScriptStep({ session, announce, copy, onBack }: Props) {
-  const { sql, oracle11g, singleBlock } = session;
+/** Etapa 3 — Script: SQL destacado e editável, painel de avisos, opções, copiar e baixar. */
+export function ScriptStep({ session, announce, copy, guard, onBack }: Props) {
+  const { sql, oracle11g, singleBlock, useOwner, sqlEdited } = session;
+
+  // Tabelas marcadas cuja entity não declara schema: ficam sem owner mesmo com a opção ligada.
+  const tablesSel = session.reports.filter((r) => r.kind !== 'view' && session.selected.has(r.id));
+  const unmapped = tablesSel.filter((r) => !r.schema).map((r) => r.tableName);
+  const SHOW = 8;
+  const editor = useRef<HTMLTextAreaElement>(null);
+  // Tab insere recuo em vez de sair do campo; Esc libera o Tab para navegar.
+  const tabTraps = useRef(true);
   const [copied, setCopied] = useState(false);
   const html = useMemo(() => highlightSql(sql), [sql]);
   const warns = useMemo(() => collectWarnings(sql), [sql]);
@@ -53,20 +63,54 @@ export function ScriptStep({ session, announce, copy, onBack }: Props) {
     download(sql, name);
     announce(`Arquivo ${name} baixado.`);
   };
-  const on11g = (on: boolean) => {
-    session.toggle11g(on);
-    announce(on ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).');
+  const on11g = (on: boolean) =>
+    guard(() => {
+      session.toggle11g(on);
+      announce(on ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).');
+    });
+  const onOwner = (on: boolean) =>
+    guard(() => {
+      session.toggleOwner(on);
+      announce(on ? 'Script refeito com OWNER.TABELA a partir do schema das entities.' : 'Script refeito sem owner nos nomes.');
+    });
+  const onBlock = (on: boolean) =>
+    guard(() => {
+      session.toggleBlock(on);
+      announce(on ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.');
+    });
+  const onEdit = (text: string) => {
+    if (!sqlEdited) announce('Script editado. Use Reverter para voltar ao gerado.');
+    session.editSql(text);
   };
-  const onBlock = (on: boolean) => {
-    session.toggleBlock(on);
-    announce(on ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.');
+  const onRevert = () => {
+    session.revertSql();
+    editor.current?.focus();
+    announce('Alterações desfeitas: o script voltou ao gerado.');
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') tabTraps.current = false;
+    if (e.key !== 'Tab' || e.shiftKey || !tabTraps.current) return;
+    e.preventDefault();
+    document.execCommand('insertText', false, '  ');
   };
 
   return (
     <div className="stack">
       <div className="review-head">
         <div>
-          <h2>Script gerado</h2>
+          <div className="title-row">
+            <h2>Script gerado</h2>
+            {sqlEdited && (
+              <span className="edited" role="status">
+                <span className="edited-dot" aria-hidden="true" />
+                Editado
+                <button type="button" className="btn btn-sm" onClick={onRevert}>
+                  <Icon name="undo" size={14} />
+                  Reverter
+                </button>
+              </span>
+            )}
+          </div>
           <p className="muted">
             {tables} tabelas · {fkOn} FKs ativas · {fkOff} FKs comentadas · {sql.split('\n').length} linhas
           </p>
@@ -93,6 +137,20 @@ export function ScriptStep({ session, announce, copy, onBack }: Props) {
           <strong>Oracle 11g</strong> — usar SEQUENCE no lugar de IDENTITY e limitar nomes a 30 caracteres
         </span>
       </label>
+      <label className="option" htmlFor="opt-owner">
+        <input type="checkbox" id="opt-owner" checked={useOwner} onChange={(e) => onOwner(e.target.checked)} />
+        <span>
+          <strong>OWNER.TABELA</strong> — usar o schema declarado na entity (ex.: schema: 'APP') como owner de tabelas, FKs, sequences e índices
+          {unmapped.length ? (
+            <span className="option-note warn">
+              {unmapped.length} de {tablesSel.length} tabelas sem schema na entity ficam sem owner: <span className="mono">{unmapped.slice(0, SHOW).join(', ')}</span>
+              {unmapped.length > SHOW ? ` e mais ${unmapped.length - SHOW}` : ''}.
+            </span>
+          ) : (
+            <span className="option-note">Todas as {tablesSel.length} tabelas marcadas têm schema na entity.</span>
+          )}
+        </span>
+      </label>
       <label className="option" htmlFor="opt-block">
         <input type="checkbox" id="opt-block" checked={singleBlock} onChange={(e) => onBlock(e.target.checked)} />
         <span>
@@ -100,11 +158,31 @@ export function ScriptStep({ session, announce, copy, onBack }: Props) {
         </span>
       </label>
 
+      <p className="hint">Dá para editar o SQL direto abaixo; copiar e baixar levam a versão editada.</p>
+
       <div className="script-grid">
-        <pre className="sql" tabIndex={0} aria-label="Script SQL gerado">
-          {/* highlightSql escapa todo o texto antes de montar o HTML. */}
-          <code dangerouslySetInnerHTML={{ __html: html }} />
-        </pre>
+        {/* Editor: textarea transparente por cima do SQL destacado (mesma fonte e linhas). */}
+        <div className="sql">
+          <div className="sql-inner">
+            <pre aria-hidden="true">
+              {/* highlightSql escapa todo o texto antes de montar o HTML. */}
+              <code dangerouslySetInnerHTML={{ __html: html }} />
+            </pre>
+            <textarea
+              ref={editor}
+              className="sql-input"
+              aria-label="Script SQL (editável)"
+              spellCheck={false}
+              autoComplete="off"
+              autoCapitalize="off"
+              wrap="off"
+              value={sql}
+              onChange={(e) => onEdit(e.target.value)}
+              onKeyDown={onKeyDown}
+              onBlur={() => (tabTraps.current = true)}
+            />
+          </div>
+        </div>
         <aside className="warn-panel" aria-labelledby="warn-title">
           <h3 id="warn-title">Avisos no script</h3>
           <ul className="warn-list">

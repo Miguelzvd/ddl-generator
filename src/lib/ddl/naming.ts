@@ -24,6 +24,9 @@ export function lookupTarget(rel: RelationModel, registry: Registry) {
 
 export const qualified = (schema: string | undefined, table: string) => (schema ? `${schema}.${table}` : table);
 
+/** Owner usado no SQL: o schema da entity, ou nenhum se a opção OWNER.TABELA estiver desligada. */
+export const ownerFor = (schema: string | undefined, opts: Pick<GenerateOptions, 'useOwner'>) => (opts.useOwner === false ? undefined : schema || undefined);
+
 /** Maiúsculas, só caracteres válidos e no máximo 128 (ou 30 no Oracle 11g). */
 export function constraintName(raw: string, opts: GenerateOptions) {
   const max = opts.oracle11g ? 30 : 128;

@@ -142,3 +142,47 @@ describe('qQuote', () => {
     assert.equal(qQuote("A IS 'x]'"), "q'{A IS 'x]'}'");
   });
 });
+
+describe('owner vindo do schema da entity', () => {
+  const files = () => [
+    parseFile('a.ts', `@Entity({ schema: 'APP', name: 'PAI' }) class Pai { @PrimaryGeneratedColumn({name:'ID'}) id: number }`),
+    parseFile('b.ts', `@Entity({ schema: 'APP', name: 'FILHO' }) @Index(['paiId']) class Filho { @PrimaryGeneratedColumn({name:'ID'}) id: number
+      @Column('number', {name:'PAI_ID'}) paiId: number
+      @ManyToOne(() => Pai) @JoinColumn({name:'PAI_ID'}) pai: Pai }`),
+    parseFile('c.ts', `@Entity('SOLTA') @Index(['nome']) class Solta { @PrimaryGeneratedColumn({name:'ID'}) id: number
+      @Column('varchar2', {name:'NOME', length: 10}) nome: string }`),
+  ];
+
+  it('tabelas, FKs, sequences e índices saem como OWNER.NOME', () => {
+    const sql = gen(files(), { oracle11g: true });
+    assert.ok(sql.includes('CREATE TABLE APP.PAI ('));
+    assert.ok(sql.includes('CREATE SEQUENCE APP.SQ_FILHO '));
+    assert.match(sql, /^ALTER TABLE APP\.FILHO ADD CONSTRAINT FK_FILHO_PAI_ID FOREIGN KEY \(PAI_ID\) REFERENCES APP\.PAI \(ID\);$/m);
+    assert.match(sql, /^CREATE INDEX APP\.IX_FILHO_PAI_ID ON APP\.FILHO \(PAI_ID\);$/m);
+  });
+
+  it('sem schema, fica sem owner (usuário conectado)', () => {
+    const sql = gen(files());
+    assert.ok(sql.includes('CREATE TABLE SOLTA ('));
+    assert.match(sql, /^CREATE INDEX IX_SOLTA_NOME ON SOLTA \(NOME\);$/m);
+  });
+});
+
+describe('opção OWNER.TABELA desligada', () => {
+  it('tira o owner de tabelas, FKs, sequences e índices', () => {
+    const sql = gen(
+      [
+        parseFile('a.ts', `@Entity({ schema: 'APP', name: 'PAI' }) class Pai { @PrimaryGeneratedColumn({name:'ID'}) id: number }`),
+        parseFile('b.ts', `@Entity({ schema: 'APP', name: 'FILHO' }) @Index(['paiId']) class Filho { @PrimaryGeneratedColumn({name:'ID'}) id: number
+          @Column('number', {name:'PAI_ID'}) paiId: number
+          @ManyToOne(() => Pai) @JoinColumn({name:'PAI_ID'}) pai: Pai }`),
+      ],
+      { oracle11g: true, useOwner: false },
+    );
+    assert.ok(sql.includes('CREATE TABLE PAI ('));
+    assert.ok(sql.includes('CREATE SEQUENCE SQ_FILHO '));
+    assert.match(sql, /^ALTER TABLE FILHO ADD CONSTRAINT FK_FILHO_PAI_ID FOREIGN KEY \(PAI_ID\) REFERENCES PAI \(ID\);$/m);
+    assert.match(sql, /^CREATE INDEX IX_FILHO_PAI_ID ON FILHO \(PAI_ID\);$/m);
+    assert.ok(!sql.includes('APP.'));
+  });
+});

@@ -1,6 +1,6 @@
 /** Tabela de junção de uma relação ManyToMany com @JoinTable. */
 import type { EntityModel, JoinColumnModel, RelationModel } from '../model';
-import { columnName, constraintName, findColumn, lookupTarget, qualified } from './naming';
+import { columnName, constraintName, findColumn, lookupTarget, ownerFor, qualified } from './naming';
 import type { PlanCtx, PlannedColumn, PlannedFk } from './plan';
 import { mapColumnType } from './typeMap';
 
@@ -25,7 +25,7 @@ export function planJoinTable(ctx: PlanCtx, rel: RelationModel): JoinTablePlan {
     const a = col.add({ key: `jt:${rel.property}:name`, kind: 'other', text: `${rel.property}: nome da tabela de junção não informado; usado ${tableName}` });
     if (a.resolved && a.note) tableNotes.push(a.note);
   }
-  const qn = qualified(e.schema, tableName);
+  const qn = qualified(ownerFor(e.schema, opts), tableName);
 
   /** Uma das duas colunas da junção, com a FK para o seu lado. */
   const side = (owner: EntityModel | undefined, ownerTable: string, jc: JoinColumnModel | undefined, label: string) => {
@@ -50,7 +50,7 @@ export function planJoinTable(ctx: PlanCtx, rel: RelationModel): JoinTablePlan {
       name: constraintName(`FK_${tableName}_${name}`, opts),
       table: qn,
       columns: [name],
-      refTable: owner ? qualified(owner.schema, owner.tableName) : rel.targetClass,
+      refTable: owner ? qualified(ownerFor(owner.schema, opts), owner.tableName) : rel.targetClass,
       refColumns: [refName],
       active: !reason,
       reason,

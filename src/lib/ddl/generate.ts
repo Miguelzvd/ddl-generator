@@ -84,6 +84,7 @@ function header(plans: TablePlan[], views: EntityReport[], allFks: PlannedFk[], 
     `-- Gerado em: ${fmtDate(meta.now ?? new Date())}`,
     `-- Tabelas: ${plans.length} | FKs: ${activeFks} ativas, ${allFks.length - activeFks} comentadas | Views listadas: ${views.length}`,
     `-- Chave gerada: ${opts.oracle11g ? 'SEQUENCE (Oracle 11g)' : 'IDENTITY (Oracle 12c+)'}`,
+    ...(opts.useOwner === false ? ['-- Owner: desligado (nomes sem OWNER.)'] : []),
     ...(opts.singleBlock
       ? ['-- Formato: bloco PL/SQL único. Rode tudo de uma vez (F5 / @arquivo); objetos que já existem são pulados.']
       : []),
@@ -189,7 +190,7 @@ export function generateDdl(reports: EntityReport[], registry: Registry, opts: G
 
   const bySchema = new Map<string, TablePlan[]>();
   for (const p of plans) {
-    const key = p.entity.schema ?? '';
+    const key = (opts.useOwner !== false && p.entity.schema) || '';
     if (!bySchema.has(key)) bySchema.set(key, []);
     bySchema.get(key)!.push(p);
   }

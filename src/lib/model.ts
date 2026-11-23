@@ -142,6 +142,8 @@ export interface GenerateOptions {
   oracle11g: boolean;
   /** Tudo num único bloco PL/SQL (BEGIN … END;) que pula o que já existe. */
   singleBlock?: boolean;
+  /** OWNER.TABELA a partir do schema da entity (padrão: ligado). */
+  useOwner?: boolean;
   overrides?: Overrides;
 }
 

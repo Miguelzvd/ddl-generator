@@ -29,7 +29,11 @@ export function useSession() {
   const [source, setSource] = useState('');
   const [oracle11g, setOracle11g] = useState(false);
   const [singleBlock, setSingleBlock] = useState(false);
+  const [useOwner, setUseOwner] = useState(true);
+  /** SQL mostrado: o gerado ou o editado pelo usuário na etapa 3. */
   const [sql, setSql] = useState('');
+  const [generatedSql, setGeneratedSql] = useState('');
+  const sqlEdited = sql !== generatedSql;
 
   const analysis = useMemo(() => buildReports(files, overrides), [files, overrides]);
   const usages = useMemo(() => findUsages(sources, files.flatMap((f) => f.entities)), [sources, files]);
@@ -72,20 +76,32 @@ export function useSession() {
     setSelected(new Set());
     setSource('');
     setSql('');
+    setGeneratedSql('');
   }
 
   /** `next` vale para a chamada logo após mudar uma opção, antes do estado atualizar. */
-  function buildSql(next: { oracle11g?: boolean; singleBlock?: boolean } = {}) {
+  function buildSql(next: { oracle11g?: boolean; singleBlock?: boolean; useOwner?: boolean } = {}) {
     const chosen = analysis.reports.filter((r) => (isSelectable(r) && selected.has(r.id)) || r.kind === 'view');
-    const opts = { oracle11g, singleBlock, ...next, overrides };
+    const opts = { oracle11g, singleBlock, useOwner, ...next, overrides };
     const text = generateDdl(chosen, analysis.registry, opts, { source });
     setSql(text);
+    setGeneratedSql(text);
     return text;
   }
+
+  /** Edição manual do SQL na etapa 3. */
+  const editSql = (text: string) => setSql(text);
+  /** Desfaz a edição: volta ao último SQL gerado. */
+  const revertSql = () => setSql(generatedSql);
 
   function toggle11g(on: boolean) {
     setOracle11g(on);
     buildSql({ oracle11g: on });
+  }
+
+  function toggleOwner(on: boolean) {
+    setUseOwner(on);
+    buildSql({ useOwner: on });
   }
 
   function toggleBlock(on: boolean) {
@@ -93,7 +109,7 @@ export function useSession() {
     buildSql({ singleBlock: on });
   }
 
-  return { files, reports: analysis.reports, usages, overrides, selected, setSelected, source, oracle11g, singleBlock, sql, addFiles, editOverrides, clearAll, buildSql, toggle11g, toggleBlock };
+  return { files, reports: analysis.reports, usages, overrides, selected, setSelected, source, oracle11g, singleBlock, useOwner, sql, sqlEdited, editSql, revertSql, addFiles, editOverrides, clearAll, buildSql, toggle11g, toggleBlock, toggleOwner };
 }
 
 export type Session = ReturnType<typeof useSession>;

@@ -5,7 +5,7 @@
 import type { Assumption, ColumnModel, ColumnOverride, EntityModel, EntityOverride, GenerateOptions, JoinColumnModel, RelationModel } from '../model';
 import { isReserved } from './ident';
 import { planJoinTable, type JoinTablePlan } from './joinTable';
-import { columnName, constraintName, entityId, findColumn, lookupTarget, qualified, type Registry } from './naming';
+import { columnName, constraintName, entityId, findColumn, lookupTarget, ownerFor, qualified, type Registry } from './naming';
 import { columnSnippet } from './snippet';
 import { baseType, mapColumnType } from './typeMap';
 
@@ -269,7 +269,7 @@ function planFk(ctx: PlanCtx, rel: RelationModel): PlannedFk {
     name: constraintName(`FK_${tableName}_${fkColName}`, opts),
     table: qn,
     columns: [fkColName],
-    refTable: target ? qualified(target.schema, target.tableName) : rel.targetClass,
+    refTable: target ? qualified(ownerFor(target.schema, opts), target.tableName) : rel.targetClass,
     refColumns: [refName],
     active,
     reason: active ? undefined : fkReason,
@@ -284,7 +284,8 @@ export function planTable(e: EntityModel, registry: Registry, opts: GenerateOpti
   const tableNotes: string[] = [];
 
   const tableName = ov?.tableName || e.tableName;
-  const qn = qualified(e.schema, tableName);
+  const owner = ownerFor(e.schema, opts);
+  const qn = qualified(owner, tableName);
   if (e.tableNameDerived) {
     const a = col.add(
       { key: 'table:name', kind: 'table-name', text: `nome da tabela não informado; derivado da classe: ${e.tableName}`, current: tableName },
@@ -317,7 +318,8 @@ export function planTable(e: EntityModel, registry: Registry, opts: GenerateOpti
       const c = findColumn(e, p);
       return c ? columnName(applyOverride(c, effOv[c.property])) : p;
     });
-    return { name: constraintName(ix.name ?? `IX_${tableName}_${cols.join('_')}`, opts), table: qn, columns: cols, unique: ix.unique };
+    // O índice vai para o mesmo owner (schema) da tabela.
+    return { name: qualified(owner, constraintName(ix.name ?? `IX_${tableName}_${cols.join('_')}`, opts)), table: qn, columns: cols, unique: ix.unique };
   });
 
   const hasGenerated = e.columns.some((c) => c.generated);
@@ -328,7 +330,7 @@ export function planTable(e: EntityModel, registry: Registry, opts: GenerateOpti
     columns,
     pk,
     pkName: constraintName(`PK_${tableName}`, opts),
-    sequenceName: hasGenerated && opts.oracle11g ? qualified(e.schema, constraintName(`SQ_${tableName}`, opts)) : undefined,
+    sequenceName: hasGenerated && opts.oracle11g ? qualified(owner, constraintName(`SQ_${tableName}`, opts)) : undefined,
     fks,
     indices,
     joinTables,
