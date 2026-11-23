@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { columnName } from '../lib/ddl/naming';
 import { mapColumnType } from '../lib/ddl/typeMap';
+import { editorPath } from '../lib/io/files';
 import type { EntityReport, Overrides } from '../lib/model';
 import type { Usage } from '../lib/usages';
 import { AssumptionEditor } from './AssumptionEditor';
@@ -123,7 +124,7 @@ export function EntityDetails({ r, overrides, change, copy, usages, sharedName }
 
 /** `arquivo:linha` que copia a referência ao clicar (para colar no Ctrl+P do editor). */
 function SourceRef({ file, line, copy, label }: { file: string; line: number; copy: (text: string) => Promise<void>; label?: string }) {
-  const ref = `${file}:${line}`;
+  const ref = `${editorPath(file)}:${line}`;
   return (
     <button type="button" className="source-ref mono" title={`Copiar ${ref}`} aria-label={`Copiar ${ref}`} onClick={() => void copy(ref)}>
       <span>{label ?? ref}</span>

@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import { assert } from './helpers';
-import { isCandidatePath, looksLikeEntity } from '../src/lib/io/files';
+import { editorPath, isCandidatePath, looksLikeEntity } from '../src/lib/io/files';
 
 
 describe('isCandidatePath', () => {
@@ -33,5 +33,15 @@ describe('looksLikeEntity', () => {
   it('ignora arquivos sem entity', () => {
     assert.ok(!looksLikeEntity('export class Service {}'));
     assert.ok(!looksLikeEntity('import { Entity } from "typeorm"'));
+  });
+});
+
+describe('editorPath', () => {
+  it('tira a pasta escolhida da frente', () => {
+    assert.equal(editorPath('projeto/src/controller/PedidoController.ts'), 'src/controller/PedidoController.ts');
+  });
+  it('mantém arquivos soltos e aceita barras do Windows', () => {
+    assert.equal(editorPath('Cliente.ts'), 'Cliente.ts');
+    assert.equal(editorPath('projeto\\src\\A.ts'), 'src/A.ts');
   });
 });

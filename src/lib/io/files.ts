@@ -18,6 +18,16 @@ export function isCandidatePath(path: string) {
 /** Filtro rápido antes de ler: só arquivos que mencionam @Entity( ou @ViewEntity(. */
 export const looksLikeEntity = (text: string) => /@(Entity|ViewEntity)\s*\(/.test(text);
 
+/**
+ * Caminho para colar no Ctrl+P do VS Code: sem a pasta escolhida na frente
+ * ("projeto/src/x.ts" → "src/x.ts"), já que ela é a raiz aberta no editor.
+ */
+export function editorPath(path: string) {
+  const p = path.replace(/\\/g, '/');
+  const i = p.indexOf('/');
+  return i === -1 ? p : p.slice(i + 1);
+}
+
 export const filePath = (f: File) => f.webkitRelativePath || f.name;
 
 /**
