@@ -188,7 +188,7 @@
     );
 
     genBtn.addEventListener('click', () => {
-      state.sql = ctx.buildSql();
+      ctx.regenerate();
       ctx.announce('Script gerado.');
       ctx.go(3);
     });

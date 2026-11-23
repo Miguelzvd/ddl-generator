@@ -5,7 +5,7 @@
   'use strict';
 
   const { mapColumnType } = DDL.typeMap;
-  const { lookupTarget, qualified, constraintName, columnName } = DDL.naming;
+  const { lookupTarget, qualified, ownerFor, constraintName, columnName } = DDL.naming;
 
   /**
    * @param {object} ctx  contexto do planTable (entity, nomes, coletor de suposições…)
@@ -23,7 +23,7 @@
       const a = col.add({ key: `jt:${rel.property}:name`, kind: 'other', text: `${rel.property}: nome da tabela de junção não informado; usado ${tableName}` });
       if (a.resolved) tableNotes.push(a.note);
     }
-    const qn = qualified(e.schema, tableName);
+    const qn = qualified(ownerFor(e.schema, opts), tableName);
 
     /** Uma das duas colunas da junção, com a FK para o seu lado. */
     const side = (owner, ownerTable, jc, label) => {
@@ -49,7 +49,7 @@
           name: constraintName(`FK_${tableName}_${name}`, opts),
           table: qn,
           columns: [name],
-          refTable: owner ? qualified(owner.schema, owner.tableName) : rel.targetClass,
+          refTable: owner ? qualified(ownerFor(owner.schema, opts), owner.tableName) : rel.targetClass,
           refColumns: [refName],
           active: !reason,
           reason,

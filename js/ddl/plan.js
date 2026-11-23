@@ -47,7 +47,7 @@
 
   const { isReserved } = DDL.ident;
   const { baseType, mapColumnType } = DDL.typeMap;
-  const { entityId, lookupTarget, qualified, constraintName, columnName } = DDL.naming;
+  const { entityId, lookupTarget, qualified, ownerFor, constraintName, columnName } = DDL.naming;
   const { columnSnippet } = DDL.snippet;
 
   /** Registra suposições, marcando como resolvidas as corrigidas ou aceitas. */
@@ -247,7 +247,7 @@
       name: constraintName(`FK_${tableName}_${fkColName}`, opts),
       table: qn,
       columns: [fkColName],
-      refTable: target ? qualified(target.schema, target.tableName) : rel.targetClass,
+      refTable: target ? qualified(ownerFor(target.schema, opts), target.tableName) : rel.targetClass,
       refColumns: [refName],
       active,
       reason: active ? undefined : fkReason,
@@ -268,7 +268,8 @@
     const tableNotes = [];
 
     const tableName = ov?.tableName || e.tableName;
-    const qn = qualified(e.schema, tableName);
+    const owner = ownerFor(e.schema, opts);
+    const qn = qualified(owner, tableName);
     if (e.tableNameDerived) {
       const a = col.add(
         { key: 'table:name', kind: 'table-name', text: `nome da tabela não informado; derivado da classe: ${e.tableName}`, current: tableName },
@@ -301,7 +302,8 @@
         const c = findColumn(e, p);
         return c ? columnName(applyOverride(c, effOv[c.property])) : p;
       });
-      return { name: constraintName(ix.name ?? `IX_${tableName}_${cols.join('_')}`, opts), table: qn, columns: cols, unique: ix.unique };
+      // O índice vai para o mesmo owner (schema) da tabela.
+      return { name: qualified(owner, constraintName(ix.name ?? `IX_${tableName}_${cols.join('_')}`, opts)), table: qn, columns: cols, unique: ix.unique };
     });
 
     const hasGenerated = e.columns.some((c) => c.generated);
@@ -312,7 +314,7 @@
       columns,
       pk,
       pkName: constraintName(`PK_${tableName}`, opts),
-      sequenceName: hasGenerated && opts.oracle11g ? qualified(e.schema, constraintName(`SQ_${tableName}`, opts)) : undefined,
+      sequenceName: hasGenerated && opts.oracle11g ? qualified(owner, constraintName(`SQ_${tableName}`, opts)) : undefined,
       fks,
       indices,
       joinTables,

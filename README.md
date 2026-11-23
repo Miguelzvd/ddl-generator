@@ -26,6 +26,9 @@ Baixe (ou clone) a pasta e abra o `index.html` com dois cliques. Depois, siga as
    `SEQUENCE` e limita nomes a 30 caracteres. A opção *Bloco PL/SQL único* junta
    tudo num `BEGIN … END;` que roda de uma vez só (F5 ou `@arquivo.sql`) e pula
    os objetos que já existem, então dá para rodar de novo sem erro.
+   A opção *OWNER.TABELA* (ligada por padrão) usa o `schema` declarado na entity
+   como owner de tabelas, FKs, sequences e índices; a própria opção lista as
+   tabelas sem `schema`, que ficam sem owner (usuário conectado).
 
 No script, `-- ATENÇÃO:` marca todo valor presumido, `-- Revisado:` o que você decidiu, e FKs
 que o Oracle recusaria (destino é view, não carregado ou tipo diferente — ORA-02267) saem

@@ -25,6 +25,9 @@
 
   const qualified = (schema, table) => (schema ? `${schema}.${table}` : table);
 
+  /** Owner usado no SQL: o schema da entity, ou nenhum se a opção OWNER.TABELA estiver desligada. */
+  const ownerFor = (schema, opts) => (opts?.useOwner === false ? undefined : schema || undefined);
+
   /** Maiúsculas, só caracteres válidos e no máximo 128 (ou 30 no Oracle 11g). */
   function constraintName(raw, opts) {
     const max = opts.oracle11g ? 30 : 128;
@@ -35,5 +38,5 @@
   /** Nome da coluna no banco (ou o da propriedade, se não informado). */
   const columnName = (c) => c.name ?? c.property;
 
-  DDL.naming = { fileKey, entityId, lookupTarget, qualified, constraintName, columnName };
+  DDL.naming = { fileKey, entityId, lookupTarget, qualified, ownerFor, constraintName, columnName };
 })((globalThis.DDL = globalThis.DDL || {}));

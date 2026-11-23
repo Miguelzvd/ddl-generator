@@ -3,8 +3,10 @@
  *
  * @typedef {object} AppCtx
  * @property {import('./state.js').AppState} state
- * @property {(step: 1 | 2 | 3) => void} go
+ * @property {(step: 1 | 2 | 3) => Promise<void>} go  pede confirmação ao sair da etapa 3 com SQL editado
  * @property {() => void} render
+ * @property {() => Promise<boolean>} confirmDiscard  true = pode seguir (sem edição ou descartada)
+ * @property {() => void} regenerate  gera o SQL de novo e zera a edição
  * @property {(msg: string) => void} announce
  * @property {(text: string) => Promise<void>} copyText
  * @property {() => string} buildSql

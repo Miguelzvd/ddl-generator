@@ -56,15 +56,64 @@
     const main = h('main', { id: 'main', class: 'main', tabindex: '-1' });
     const stepper = h('ol', { class: 'stepper', 'aria-label': 'Etapas' });
 
+    /**
+     * Se o SQL foi editado, pergunta antes de descartar. Resolve true quando pode
+     * seguir (sem edição ou o usuário aceitou descartar; aí o SQL volta ao gerado).
+     * @returns {Promise<boolean>}
+     */
+    function confirmDiscard() {
+      if (!state.sqlEdited) return Promise.resolve(true);
+      return new Promise((resolve) => {
+        const keep = h('button', { type: 'button', class: 'btn' }, 'Continuar editando');
+        const discard = h('button', { type: 'button', class: 'btn btn-danger' }, 'Descartar alterações');
+        const dlg = h(
+          'dialog',
+          { class: 'dialog', 'aria-labelledby': 'discard-title', 'aria-describedby': 'discard-desc' },
+          h('h2', { id: 'discard-title' }, 'Descartar as alterações no script?'),
+          h('p', { id: 'discard-desc', class: 'muted' }, 'Você editou o SQL. Se continuar, o script volta a ser o gerado e as alterações que você fez serão desfeitas.'),
+          h('div', { class: 'row dialog-actions' }, keep, discard),
+        );
+        const close = (ok) => {
+          dlg.close();
+          dlg.remove();
+          if (ok) {
+            state.sql = state.generatedSql;
+            state.sqlEdited = false;
+          }
+          resolve(ok);
+        };
+        keep.addEventListener('click', () => close(false));
+        discard.addEventListener('click', () => close(true));
+        dlg.addEventListener('cancel', (e) => {
+          e.preventDefault();
+          close(false);
+        });
+        document.body.append(dlg);
+        dlg.showModal();
+        keep.focus();
+      });
+    }
+
+    // Fechar ou recarregar a aba com SQL editado também perde as alterações.
+    window.addEventListener('beforeunload', (e) => {
+      if (state.sqlEdited) e.preventDefault();
+    });
+
     /** @type {import('./loadStep.js').AppCtx} */
     const ctx = {
       state,
       render,
-      go(step) {
+      confirmDiscard,
+      async go(step) {
+        if (state.step === 3 && step !== 3 && !(await confirmDiscard())) return;
         state.step = step;
         render();
         main.focus({ preventScroll: true });
         window.scrollTo({ top: 0 });
+      },
+      regenerate() {
+        state.sql = state.generatedSql = ctx.buildSql();
+        state.sqlEdited = false;
       },
       announce(msg) {
         live.textContent = '';

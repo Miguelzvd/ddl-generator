@@ -13,7 +13,9 @@
  * @property {string} query
  * @property {import('../model.js').GenerateOptions} opts
  * @property {string} source            de onde vieram os arquivos (para o cabeçalho)
- * @property {string} sql               último script gerado
+ * @property {string} sql               script mostrado (o gerado ou o editado pelo usuário)
+ * @property {string} generatedSql      último script gerado, para reverter edições
+ * @property {boolean} sqlEdited        o usuário mexeu no SQL da etapa 3
  * @property {import('../io/files.js').SourceFile[]} sources  todos os .ts lidos (para a busca de usos)
  * @property {Map<string, import('../analysis/usages.js').Usage[]>} usages  classe → onde é usada
  * @property {{ done: number, total: number }} [loading]
@@ -42,9 +44,11 @@
       statusFilter: new Set(),
       schemaFilter: '',
       query: '',
-      opts: { oracle11g: false, singleBlock: false },
+      opts: { oracle11g: false, singleBlock: false, useOwner: true },
       source: '',
       sql: '',
+      generatedSql: '',
+      sqlEdited: false,
       sources: [],
       usages: new Map(),
     };

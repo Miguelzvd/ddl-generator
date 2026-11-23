@@ -40,6 +40,7 @@
     x: 'M6 6l12 12M18 6 6 18',
     check: 'M5 12l5 5 9-10',
     upload: 'M12 16V5M7 10l5-5 5 5M5 20h14',
+    undo: 'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
   };
 
   /** Ícone SVG em traço, na cor do texto. */

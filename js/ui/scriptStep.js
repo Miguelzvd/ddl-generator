@@ -1,5 +1,5 @@
 /**
- * Etapa 3 — Script: SQL destacado, painel de avisos, opção 11g, copiar e baixar.
+ * Etapa 3 — Script: SQL destacado e editável, painel de avisos, opções, copiar e baixar.
  */
 (function (DDL) {
   'use strict';
@@ -60,13 +60,36 @@
   /** @param {import('./loadStep.js').AppCtx} ctx */
   function renderScript(ctx) {
     const { state } = ctx;
+    // Editor: textarea transparente por cima do SQL destacado (mesma fonte e linhas).
     const code = h('code', {});
-    const pre = h('pre', { class: 'sql', tabindex: '0', 'aria-label': 'Script SQL gerado' }, code);
+    const pre = h('pre', { 'aria-hidden': 'true' }, code);
+    const editor = h('textarea', {
+      class: 'sql-input',
+      'aria-label': 'Script SQL (editável)',
+      spellcheck: 'false',
+      autocomplete: 'off',
+      autocapitalize: 'off',
+      wrap: 'off',
+    });
+    const box = h('div', { class: 'sql' }, h('div', { class: 'sql-inner' }, pre, editor));
     const warnList = h('ul', { class: 'warn-list' });
     const stats = h('p', { class: 'muted' });
 
-    const paint = () => {
+    const revertBtn = h('button', { type: 'button', class: 'btn btn-sm' }, icon('undo', 14), 'Reverter');
+    const editedTag = h('span', { class: 'edited', role: 'status' }, h('span', { class: 'edited-dot', 'aria-hidden': 'true' }), 'Editado', revertBtn);
+    revertBtn.addEventListener('click', () => {
+      state.sql = state.generatedSql;
+      state.sqlEdited = false;
+      paint();
+      editor.focus();
+      ctx.announce('Alterações desfeitas: o script voltou ao gerado.');
+    });
+
+    /** @param {boolean} [fromEditor]  true quando quem mudou foi a digitação (não mexe no textarea) */
+    const paint = (fromEditor = false) => {
       const sql = state.sql;
+      if (!fromEditor) editor.value = sql;
+      editedTag.hidden = !state.sqlEdited;
       code.innerHTML = highlightSql(sql);
       // No bloco PL/SQL os comandos vêm como `  run(q'[CREATE ...`.
       const count = (re) => (sql.match(re) ?? []).length;
@@ -94,21 +117,77 @@
       );
     };
 
-    const toggle11g = h('input', { type: 'checkbox', id: 'opt-11g', checked: state.opts.oracle11g });
-    toggle11g.addEventListener('change', () => {
-      state.opts.oracle11g = toggle11g.checked;
-      state.sql = ctx.buildSql();
-      paint();
-      ctx.announce(toggle11g.checked ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).');
+    let pending = 0;
+    editor.addEventListener('input', () => {
+      const was = state.sqlEdited;
+      state.sql = editor.value;
+      state.sqlEdited = state.sql !== state.generatedSql;
+      if (state.sqlEdited && !was) ctx.announce('Script editado. Use Reverter para voltar ao gerado.');
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(() => paint(true));
     });
+    // Tab insere recuo em vez de sair do campo; Esc libera o Tab para navegar.
+    let tabTraps = true;
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') tabTraps = false;
+      if (e.key !== 'Tab' || e.shiftKey || !tabTraps) return;
+      e.preventDefault();
+      document.execCommand('insertText', false, '  ');
+    });
+    editor.addEventListener('blur', () => (tabTraps = true));
 
-    const toggleBlock = h('input', { type: 'checkbox', id: 'opt-block', checked: !!state.opts.singleBlock });
-    toggleBlock.addEventListener('change', () => {
-      state.opts.singleBlock = toggleBlock.checked;
-      state.sql = ctx.buildSql();
-      paint();
-      ctx.announce(toggleBlock.checked ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.');
-    });
+    /** Opção que refaz o script: com SQL editado, pede para descartar antes. */
+    const option = (id, checked, apply, msg) => {
+      const input = h('input', { type: 'checkbox', id, checked });
+      input.addEventListener('change', async () => {
+        const want = input.checked;
+        if (state.sqlEdited) {
+          input.checked = !want;
+          if (!(await ctx.confirmDiscard())) return;
+          input.checked = want;
+        }
+        apply(want);
+        ctx.regenerate();
+        paint();
+        ctx.announce(msg(want));
+      });
+      return input;
+    };
+
+    const toggle11g = option(
+      'opt-11g',
+      state.opts.oracle11g,
+      (on) => (state.opts.oracle11g = on),
+      (on) => (on ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).'),
+    );
+    const toggleOwner = option(
+      'opt-owner',
+      state.opts.useOwner !== false,
+      (on) => (state.opts.useOwner = on),
+      (on) => (on ? 'Script refeito com OWNER.TABELA a partir do schema das entities.' : 'Script refeito sem owner nos nomes.'),
+    );
+
+    // Tabelas marcadas cuja entity não declara schema: ficam sem owner mesmo com a opção ligada.
+    const tables = state.analysis.reports.filter((r) => r.kind !== 'view' && state.selected.has(r.id));
+    const unmapped = tables.filter((r) => !r.schema).map((r) => r.tableName);
+    const SHOW = 8;
+    const ownerNote = unmapped.length
+      ? h(
+          'span',
+          { class: 'option-note warn' },
+          `${unmapped.length} de ${tables.length} tabelas sem schema na entity ficam sem owner: `,
+          h('span', { class: 'mono' }, unmapped.slice(0, SHOW).join(', ')),
+          unmapped.length > SHOW ? ` e mais ${unmapped.length - SHOW}` : '',
+          '.',
+        )
+      : h('span', { class: 'option-note' }, `Todas as ${tables.length} tabelas marcadas têm schema na entity.`);
+
+    const toggleBlock = option(
+      'opt-block',
+      !!state.opts.singleBlock,
+      (on) => (state.opts.singleBlock = on),
+      (on) => (on ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.'),
+    );
 
     const copyLabel = (done) => [icon(done ? 'check' : 'copy'), h('span', {}, done ? 'Copiado' : 'Copiar')];
     const copyBtn = h('button', { type: 'button', class: 'btn' }, ...copyLabel(false));
@@ -132,12 +211,19 @@
       h(
         'div',
         { class: 'review-head' },
-        h('div', {}, h('h2', {}, 'Script gerado'), stats),
+        h('div', {}, h('div', { class: 'title-row' }, h('h2', {}, 'Script gerado'), editedTag), stats),
         h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => ctx.go(2) }, icon('back'), 'Voltar para a lista'), copyBtn, dlBtn),
       ),
       h('label', { class: 'option', for: 'opt-11g' }, toggle11g, h('span', {}, h('strong', {}, 'Oracle 11g'), ' — usar SEQUENCE no lugar de IDENTITY e limitar nomes a 30 caracteres')),
+      h(
+        'label',
+        { class: 'option', for: 'opt-owner' },
+        toggleOwner,
+        h('span', {}, h('strong', {}, 'OWNER.TABELA'), ' — usar o schema declarado na entity (ex.: schema: \'APP\') como owner de tabelas, FKs, sequences e índices', ownerNote),
+      ),
       h('label', { class: 'option', for: 'opt-block' }, toggleBlock, h('span', {}, h('strong', {}, 'Bloco PL/SQL único'), ' — tudo num só comando (BEGIN … END;), que pula o que já existe e pode rodar de novo')),
-      h('div', { class: 'script-grid' }, pre, h('aside', { class: 'warn-panel', 'aria-labelledby': 'warn-title' }, h('h3', { id: 'warn-title' }, 'Avisos no script'), warnList)),
+      h('p', { class: 'hint' }, 'Dá para editar o SQL direto abaixo; copiar e baixar levam a versão editada.'),
+      h('div', { class: 'script-grid' }, box, h('aside', { class: 'warn-panel', 'aria-labelledby': 'warn-title' }, h('h3', { id: 'warn-title' }, 'Avisos no script'), warnList)),
     );
   }
 
