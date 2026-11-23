@@ -42,7 +42,7 @@
       statusFilter: new Set(),
       schemaFilter: '',
       query: '',
-      opts: { oracle11g: false },
+      opts: { oracle11g: false, singleBlock: false },
       source: '',
       sql: '',
       sources: [],

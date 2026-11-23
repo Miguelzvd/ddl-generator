@@ -84,7 +84,7 @@
  * @property {Assumption[]} assumptions
  * @property {EntityModel} [entity]
  *
- * @typedef {{ oracle11g: boolean, overrides?: Overrides }} GenerateOptions
+ * @typedef {{ oracle11g: boolean, singleBlock?: boolean, overrides?: Overrides }} GenerateOptions
  */
 (function (DDL) {
   'use strict';

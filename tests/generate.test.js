@@ -100,3 +100,46 @@ describe('generateDdl', () => {
     assert.equal(sql.match(/CREATE TABLE T \(/g).length, 1);
   });
 });
+
+describe('bloco PL/SQL único', () => {
+  const block = () => gen(all(), { oracle11g: true, singleBlock: true });
+
+  it('envolve tudo num DECLARE … BEGIN … END; / só', () => {
+    const sql = block();
+    assert.equal(sql.match(/^DECLARE$/gm).length, 1);
+    assert.equal(sql.match(/^BEGIN$/gm).length, 1);
+    assert.match(sql, /\nEND;\n\/\n/);
+    assert.ok(sql.includes('SQLCODE IN (-955, -2260, -2264, -2275, -1408)'));
+  });
+
+  it('cada comando vira run(q\'[...]\') sem o ; final', () => {
+    const sql = block();
+    assert.ok(sql.includes("  run(q'[CREATE SEQUENCE SQ_PRODUTO START WITH 1 INCREMENT BY 1 NOCACHE]');"));
+    assert.ok(sql.includes("  run(q'[COMMENT ON TABLE LOJA.CLIENTE IS 'Entity Cliente (loja/Cliente.ts)']');"));
+    assert.match(sql, /run\(q'\[CREATE TABLE LOJA\.CLIENTE \(\n[\s\S]*?\n\)\]'\);/);
+    assert.ok(!/;\]'\);/.test(sql));
+    // Fora do bloco não sobra comando solto.
+    assert.ok(!/^(CREATE|ALTER|COMMENT) /m.test(sql));
+  });
+
+  it('mantém comentários, FKs comentadas e views fora dos comandos', () => {
+    const sql = block();
+    assert.match(sql, /^ {2}-- Tabela LOJA\.CLIENTE$/m);
+    assert.match(sql, /^ {2}-- ALTER TABLE /m);
+    assert.ok(sql.indexOf('-- Views encontradas') > sql.indexOf('\nEND;\n/'));
+  });
+
+  it('sem a opção, o script continua com comandos separados', () => {
+    const sql = gen(all());
+    assert.ok(!sql.includes('DECLARE'));
+    assert.ok(sql.includes("COMMENT ON TABLE LOJA.CLIENTE IS 'Entity Cliente (loja/Cliente.ts)';"));
+  });
+});
+
+describe('qQuote', () => {
+  const { qQuote } = DDL.generate;
+  it('usa [ ] e troca de delimitador se o texto já tem ]\'', () => {
+    assert.equal(qQuote("A IS 'x'"), "q'[A IS 'x']'");
+    assert.equal(qQuote("A IS 'x]'"), "q'{A IS 'x]'}'");
+  });
+});

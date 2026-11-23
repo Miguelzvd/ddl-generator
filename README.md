@@ -23,7 +23,9 @@ Baixe (ou clone) a pasta e abra o `index.html` com dois cliques. Depois, siga as
    (`arquivo:linha`, que copia ao clicar).
    As correções ficam salvas neste navegador.
 3. **Script** — copie ou baixe o `.sql`. A opção *Oracle 11g* troca `IDENTITY` por
-   `SEQUENCE` e limita nomes a 30 caracteres.
+   `SEQUENCE` e limita nomes a 30 caracteres. A opção *Bloco PL/SQL único* junta
+   tudo num `BEGIN … END;` que roda de uma vez só (F5 ou `@arquivo.sql`) e pula
+   os objetos que já existem, então dá para rodar de novo sem erro.
 
 No script, `-- ATENÇÃO:` marca todo valor presumido, `-- Revisado:` o que você decidiu, e FKs
 que o Oracle recusaria (destino é view, não carregado ou tipo diferente — ORA-02267) saem

@@ -24,7 +24,22 @@ describe('highlightSql', () => {
   });
 });
 
+describe('highlightSql no bloco PL/SQL', () => {
+  it('q\'[ e ]\' não viram string; o texto do comando sim', () => {
+    const html = highlightSql("  run(q'[COMMENT ON TABLE T IS 'oi']');");
+    assert.ok(html.includes('<span class="tok-com">q&#39;[</span>'));
+    assert.ok(html.includes('<span class="tok-com">]&#39;</span>'));
+    assert.ok(html.includes('<span class="tok-kw">COMMENT</span>'));
+    assert.ok(html.includes('<span class="tok-str">&#39;oi&#39;</span>'));
+  });
+});
+
 describe('collectWarnings', () => {
+  it('funciona dentro do bloco PL/SQL', () => {
+    const sql = ['  -- Tabela T', "  run(q'[CREATE TABLE T (", '  -- ATENÇÃO: x', '  NOME VARCHAR2(255),', ")]');"].join('\n');
+    assert.deepEqual(collectWarnings(sql), [{ line: 3, text: 'x', where: 'T.NOME' }]);
+  });
+
   it('aponta TABELA.COLUNA, chave estrangeira e a linha', () => {
     const sql = [
       '-- Tabela LOJA.T',

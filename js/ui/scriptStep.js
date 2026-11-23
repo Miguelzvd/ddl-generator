@@ -18,7 +18,7 @@
     const warns = [];
     let table = '';
     lines.forEach((l, i) => {
-      const t = /^-- Tabela (.+)$/.exec(l);
+      const t = /^\s*-- Tabela (.+)$/.exec(l);
       if (t) table = t[1];
       if (!/^\s*-- (ATENÇÃO|MOTIVO):/.test(l)) return;
       const next = lines.slice(i + 1).find((x) => !/^\s*--/.test(x)) ?? '';
@@ -68,9 +68,11 @@
     const paint = () => {
       const sql = state.sql;
       code.innerHTML = highlightSql(sql);
-      const tables = (sql.match(/^CREATE TABLE /gm) ?? []).length;
-      const fkOn = (sql.match(/^ALTER TABLE /gm) ?? []).length;
-      const fkOff = (sql.match(/^-- ALTER TABLE /gm) ?? []).length;
+      // No bloco PL/SQL os comandos vêm como `  run(q'[CREATE ...`.
+      const count = (re) => (sql.match(re) ?? []).length;
+      const tables = count(/^(?:\s*run\(q'.)?CREATE TABLE /gm);
+      const fkOn = count(/^(?:\s*run\(q'.)?ALTER TABLE /gm);
+      const fkOff = count(/^\s*-- ALTER TABLE /gm);
       stats.textContent = `${tables} tabelas · ${fkOn} FKs ativas · ${fkOff} FKs comentadas · ${sql.split('\n').length} linhas`;
       const warns = collectWarnings(sql);
       warnList.replaceChildren(
@@ -100,6 +102,14 @@
       ctx.announce(toggle11g.checked ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).');
     });
 
+    const toggleBlock = h('input', { type: 'checkbox', id: 'opt-block', checked: !!state.opts.singleBlock });
+    toggleBlock.addEventListener('change', () => {
+      state.opts.singleBlock = toggleBlock.checked;
+      state.sql = ctx.buildSql();
+      paint();
+      ctx.announce(toggleBlock.checked ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.');
+    });
+
     const copyLabel = (done) => [icon(done ? 'check' : 'copy'), h('span', {}, done ? 'Copiado' : 'Copiar')];
     const copyBtn = h('button', { type: 'button', class: 'btn' }, ...copyLabel(false));
     copyBtn.addEventListener('click', async () => {
@@ -126,6 +136,7 @@
         h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => ctx.go(2) }, icon('back'), 'Voltar para a lista'), copyBtn, dlBtn),
       ),
       h('label', { class: 'option', for: 'opt-11g' }, toggle11g, h('span', {}, h('strong', {}, 'Oracle 11g'), ' — usar SEQUENCE no lugar de IDENTITY e limitar nomes a 30 caracteres')),
+      h('label', { class: 'option', for: 'opt-block' }, toggleBlock, h('span', {}, h('strong', {}, 'Bloco PL/SQL único'), ' — tudo num só comando (BEGIN … END;), que pula o que já existe e pode rodar de novo')),
       h('div', { class: 'script-grid' }, pre, h('aside', { class: 'warn-panel', 'aria-labelledby': 'warn-title' }, h('h3', { id: 'warn-title' }, 'Avisos no script'), warnList)),
     );
   }

@@ -6,7 +6,8 @@
 
   const KEYWORDS = new Set(
     `CREATE TABLE ALTER ADD CONSTRAINT PRIMARY KEY FOREIGN REFERENCES NOT NULL DEFAULT COMMENT ON IS COLUMN
-     INDEX UNIQUE SEQUENCE START WITH INCREMENT BY NOCACHE GENERATED AS IDENTITY`.trim().split(/\s+/),
+     INDEX UNIQUE SEQUENCE START WITH INCREMENT BY NOCACHE GENERATED AS IDENTITY
+     SET DECLARE PROCEDURE BEGIN END EXCEPTION WHEN OTHERS THEN IF ELSE RAISE EXECUTE IMMEDIATE IN`.trim().split(/\s+/),
   );
   const TYPES = /^(VARCHAR2|NVARCHAR2|CHAR|NCHAR|NUMBER|FLOAT|DATE|TIMESTAMP|CLOB|NCLOB|BLOB|RAW)$/;
 
@@ -14,16 +15,18 @@
 
   function highlightCode(code) {
     let out = '';
-    const re = /('(?:[^']|'')*')|([A-Za-z_][A-Za-z0-9_$#]*)|(\s+)|(.)/g;
+    // q'[ e ]' do bloco PL/SQL são só a moldura do comando: não abrem string.
+    const re = /(\bq'[[{<(!#]|[\]}>)!#]'(?=\)))|('(?:[^']|'')*')|([A-Za-z_][A-Za-z0-9_$#]*)|(\s+)|(.)/g;
     let m;
     while ((m = re.exec(code))) {
-      if (m[1]) out += `<span class="tok-str">${escapeHtml(m[1])}</span>`;
-      else if (m[2]) {
-        const w = m[2];
+      if (m[1]) out += `<span class="tok-com">${escapeHtml(m[1])}</span>`;
+      else if (m[2]) out += `<span class="tok-str">${escapeHtml(m[2])}</span>`;
+      else if (m[3]) {
+        const w = m[3];
         if (KEYWORDS.has(w)) out += `<span class="tok-kw">${w}</span>`;
         else if (TYPES.test(w)) out += `<span class="tok-type">${w}</span>`;
         else out += escapeHtml(w);
-      } else out += escapeHtml(m[3] ?? m[4] ?? '');
+      } else out += escapeHtml(m[4] ?? m[5] ?? '');
     }
     return out;
   }
