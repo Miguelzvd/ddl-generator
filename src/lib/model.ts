@@ -140,6 +140,8 @@ export interface EntityReport {
 
 export interface GenerateOptions {
   oracle11g: boolean;
+  /** Tudo num único bloco PL/SQL (BEGIN … END;) que pula o que já existe. */
+  singleBlock?: boolean;
   overrides?: Overrides;
 }
 

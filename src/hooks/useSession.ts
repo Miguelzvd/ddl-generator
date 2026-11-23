@@ -28,6 +28,7 @@ export function useSession() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [source, setSource] = useState('');
   const [oracle11g, setOracle11g] = useState(false);
+  const [singleBlock, setSingleBlock] = useState(false);
   const [sql, setSql] = useState('');
 
   const analysis = useMemo(() => buildReports(files, overrides), [files, overrides]);
@@ -73,19 +74,26 @@ export function useSession() {
     setSql('');
   }
 
-  function buildSql(use11g = oracle11g) {
+  /** `next` vale para a chamada logo após mudar uma opção, antes do estado atualizar. */
+  function buildSql(next: { oracle11g?: boolean; singleBlock?: boolean } = {}) {
     const chosen = analysis.reports.filter((r) => (isSelectable(r) && selected.has(r.id)) || r.kind === 'view');
-    const text = generateDdl(chosen, analysis.registry, { oracle11g: use11g, overrides }, { source });
+    const opts = { oracle11g, singleBlock, ...next, overrides };
+    const text = generateDdl(chosen, analysis.registry, opts, { source });
     setSql(text);
     return text;
   }
 
   function toggle11g(on: boolean) {
     setOracle11g(on);
-    buildSql(on);
+    buildSql({ oracle11g: on });
   }
 
-  return { files, reports: analysis.reports, usages, overrides, selected, setSelected, source, oracle11g, sql, addFiles, editOverrides, clearAll, buildSql, toggle11g };
+  function toggleBlock(on: boolean) {
+    setSingleBlock(on);
+    buildSql({ singleBlock: on });
+  }
+
+  return { files, reports: analysis.reports, usages, overrides, selected, setSelected, source, oracle11g, singleBlock, sql, addFiles, editOverrides, clearAll, buildSql, toggle11g, toggleBlock };
 }
 
 export type Session = ReturnType<typeof useSession>;

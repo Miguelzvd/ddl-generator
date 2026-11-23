@@ -32,14 +32,16 @@ function jumpTo(line: number) {
 
 /** Etapa 3 — Script: SQL destacado, painel de avisos, opção 11g, copiar e baixar. */
 export function ScriptStep({ session, announce, copy, onBack }: Props) {
-  const { sql, oracle11g } = session;
+  const { sql, oracle11g, singleBlock } = session;
   const [copied, setCopied] = useState(false);
   const html = useMemo(() => highlightSql(sql), [sql]);
   const warns = useMemo(() => collectWarnings(sql), [sql]);
 
-  const tables = (sql.match(/^CREATE TABLE /gm) ?? []).length;
-  const fkOn = (sql.match(/^ALTER TABLE /gm) ?? []).length;
-  const fkOff = (sql.match(/^-- ALTER TABLE /gm) ?? []).length;
+  // No bloco PL/SQL os comandos vêm como `  run(q'[CREATE ...`.
+  const count = (re: RegExp) => (sql.match(re) ?? []).length;
+  const tables = count(/^(?:\s*run\(q'.)?CREATE TABLE /gm);
+  const fkOn = count(/^(?:\s*run\(q'.)?ALTER TABLE /gm);
+  const fkOff = count(/^\s*-- ALTER TABLE /gm);
 
   const onCopy = async () => {
     await copy(sql);
@@ -54,6 +56,10 @@ export function ScriptStep({ session, announce, copy, onBack }: Props) {
   const on11g = (on: boolean) => {
     session.toggle11g(on);
     announce(on ? 'Script refeito com SEQUENCE (Oracle 11g).' : 'Script refeito com IDENTITY (Oracle 12c+).');
+  };
+  const onBlock = (on: boolean) => {
+    session.toggleBlock(on);
+    announce(on ? 'Script refeito como um único bloco PL/SQL.' : 'Script refeito com comandos separados.');
   };
 
   return (
@@ -85,6 +91,12 @@ export function ScriptStep({ session, announce, copy, onBack }: Props) {
         <input type="checkbox" id="opt-11g" checked={oracle11g} onChange={(e) => on11g(e.target.checked)} />
         <span>
           <strong>Oracle 11g</strong> — usar SEQUENCE no lugar de IDENTITY e limitar nomes a 30 caracteres
+        </span>
+      </label>
+      <label className="option" htmlFor="opt-block">
+        <input type="checkbox" id="opt-block" checked={singleBlock} onChange={(e) => onBlock(e.target.checked)} />
+        <span>
+          <strong>Bloco PL/SQL único</strong> — tudo num só comando (BEGIN … END;), que pula o que já existe e pode rodar de novo
         </span>
       </label>
 

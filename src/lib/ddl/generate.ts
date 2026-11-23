@@ -84,6 +84,9 @@ function header(plans: TablePlan[], views: EntityReport[], allFks: PlannedFk[], 
     `-- Gerado em: ${fmtDate(meta.now ?? new Date())}`,
     `-- Tabelas: ${plans.length} | FKs: ${activeFks} ativas, ${allFks.length - activeFks} comentadas | Views listadas: ${views.length}`,
     `-- Chave gerada: ${opts.oracle11g ? 'SEQUENCE (Oracle 11g)' : 'IDENTITY (Oracle 12c+)'}`,
+    ...(opts.singleBlock
+      ? ['-- Formato: bloco PL/SQL único. Rode tudo de uma vez (F5 / @arquivo); objetos que já existem são pulados.']
+      : []),
     '-- Legenda: "-- ATENÇÃO:" marca valores presumidos; FKs comentadas trazem "-- MOTIVO:".',
     RULE,
   ];
@@ -96,6 +99,64 @@ function viewsBlock(views: EntityReport[]) {
     out.push('', `-- View ${e.schema ? `${e.schema}.` : ''}${e.tableName} — ${e.className} (${e.file})`);
     for (const c of e.columns) out.push(`--   ${columnName(c)}${c.tsType ? ` (${c.tsType})` : ''}`);
   }
+  return out;
+}
+
+/** Pares de delimitador do q-quote; usa o primeiro que não aparece no comando. */
+const Q_DELIMS = [['[', ']'], ['{', '}'], ['<', '>'], ['(', ')'], ['!', '!'], ['#', '#']] as const;
+
+/** `q'[...]'` com um delimitador que não fecha antes da hora. */
+export function qQuote(text: string) {
+  const pair = Q_DELIMS.find(([, close]) => !text.includes(`${close}'`));
+  if (!pair) throw new Error('Comando sem delimitador livre para q-quote');
+  return `q'${pair[0]}${text}${pair[1]}'`;
+}
+
+// Erros de "já existe" que o bloco ignora para poder rodar de novo:
+// ORA-00955 nome já usado (tabela, sequence, índice), ORA-02260 PK já existe,
+// ORA-02264 nome de constraint já usado, ORA-02275 FK já existe, ORA-01408 índice já existe.
+const BLOCK_HEAD = [
+  'SET SERVEROUTPUT ON',
+  '',
+  'DECLARE',
+  '  -- Executa um comando; se o objeto já existe, avisa e segue.',
+  '  PROCEDURE run(p_sql VARCHAR2) IS',
+  '  BEGIN',
+  '    EXECUTE IMMEDIATE p_sql;',
+  '  EXCEPTION',
+  '    WHEN OTHERS THEN',
+  '      IF SQLCODE IN (-955, -2260, -2264, -2275, -1408) THEN',
+  "        DBMS_OUTPUT.PUT_LINE('Já existe, pulado: ' || SUBSTR(p_sql, 1, 80));",
+  '      ELSE',
+  '        RAISE;',
+  '      END IF;',
+  '  END;',
+  'BEGIN',
+];
+
+/**
+ * Envolve os comandos num único bloco PL/SQL: cada comando vira `run(q'[...]');`
+ * (sem o `;` final); comentários seguem como estão.
+ */
+function wrapInBlock(lines: string[]) {
+  const out = [...BLOCK_HEAD];
+  const ends = (l: string) => l.endsWith(';') && !/^\s*--/.test(l);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      out.push('');
+      continue;
+    }
+    if (/^\s*--/.test(line)) {
+      out.push(`  ${line}`);
+      continue;
+    }
+    const stmt = [line];
+    while (!ends(stmt[stmt.length - 1]) && i + 1 < lines.length) stmt.push(lines[++i]);
+    const text = stmt.join('\n').replace(/;$/, '');
+    out.push(...`  run(${qQuote(text)});`.split('\n'));
+  }
+  out.push('END;', '/');
   return out;
 }
 
@@ -134,7 +195,8 @@ export function generateDdl(reports: EntityReport[], registry: Registry, opts: G
   }
   const schemas = [...bySchema.keys()].sort((a, b) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)));
   const allFks = plans.flatMap((p) => [...p.fks, ...p.joinTables.flatMap((j) => j.fks)]);
-  const out = header(plans, views, allFks, opts, meta);
+  const head = header(plans, views, allFks, opts, meta);
+  const out: string[] = [];
 
   for (const s of schemas) {
     out.push('', SUB, `-- Schema: ${s || DEFAULT_SCHEMA}`, SUB);
@@ -159,6 +221,7 @@ export function generateDdl(reports: EntityReport[], registry: Registry, opts: G
     for (const ix of indices) out.push(`CREATE ${ix.unique ? 'UNIQUE ' : ''}INDEX ${ix.name} ON ${ix.table} (${identList(ix.columns)});`);
   }
 
-  if (views.length) out.push(...viewsBlock(views));
-  return out.join('\n') + '\n';
+  const tail = views.length ? viewsBlock(views) : [];
+  if (!opts.singleBlock) return [...head, ...out, ...tail].join('\n') + '\n';
+  return [...head, '', ...wrapInBlock(out), ...tail].join('\n') + '\n';
 }
